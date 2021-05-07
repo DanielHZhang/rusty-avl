@@ -26,6 +26,24 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
   pub fn is_leaf(&self) -> bool {
     self.left.is_none() && self.right.is_none()
   }
+
+  pub fn smallest(&self) -> Option<&Self> {
+    let mut cur = self;
+    while let Some(ref node) = cur.left {
+      let a = node.as_ref();
+      cur = a;
+    }
+    Some(cur)
+  }
+
+  pub fn smallest_mut(&mut self) -> Option<&mut Self> {
+    let mut cur = self;
+    while let Some(ref mut node) = cur.left {
+      let a = node.as_mut();
+      cur = a;
+    }
+    Some(cur)
+  }
 }
 
 pub trait NodeOption<K: Ord, V: PartialEq> {
