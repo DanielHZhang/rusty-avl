@@ -1,5 +1,5 @@
 use super::{
-  iter::{NodeIterInorder, NodeIterPreorder},
+  iter::{NodeIterInorder, NodeIterPostorder, NodeIterPreorder},
   node::{Node, NodeOption, Tree},
 };
 use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
@@ -240,6 +240,9 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
             }
           }
           self.size -= 1;
+          if self.avl {
+            //
+          }
           return true;
         }
       }
@@ -273,7 +276,9 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     }
   }
 
-  pub fn balance() {}
+  pub fn to_balanced(self) {}
+
+  fn balance(&mut self) {}
 
   fn right_rotation() {}
 
@@ -287,7 +292,9 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     NodeIterInorder::new(self.root.as_deref())
   }
 
-  pub fn iter_postorder() {}
+  pub fn iter_postorder(&self) -> NodeIterPostorder<K, V> {
+    NodeIterPostorder::new(self.root.as_deref())
+  }
 
   // pub fn into_vec(&self) -> Vec<&Node<K, V>> {
   //   let mut new_vec = Vec::with_capacity(self.size);

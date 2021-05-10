@@ -89,9 +89,15 @@ pub struct NodeIterPostorder<'a, K: Ord, V: PartialEq> {
 
 impl<'a, K: Ord, V: PartialEq> NodeIterPostorder<'a, K, V> {
   pub fn new(root: Option<&'a Node<K, V>>) -> Self {
-    Self {
-      stack: Vec::new(),
-      current: root,
+    match root {
+      None => Self {
+        stack: Vec::new(),
+        current: None,
+      },
+      Some(node) => Self {
+        stack: Vec::from([node]),
+        current: root,
+      },
     }
   }
 }
@@ -100,30 +106,30 @@ impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterPostorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    loop {
-      let mut cur = self.current;
-      while let Some(node) = cur {
-        if let Some(right) = node.right.as_deref() {
-          self.stack.push(right);
-        }
-        self.stack.push(node);
-        cur = node.left.as_deref();
-      }
-      cur = self.stack.pop();
-      match cur {
-        None => return None,
-        Some(node) => {
-          if let (Some(right), Some(top)) = (node.right.as_deref(), self.stack.last()) {
-            // Top of the stack is the right child of the current popped node
-            if right.key == top.key {
-              self.current = self.stack.pop();
-              self.stack.push(node);
-              continue;
+    match self.current {
+      None => None,
+      Some(cur) => {
+        while let Some(top) = self.stack.pop() {
+          let finished_subtrees = match (top.right.as_deref(), top.left.as_deref()) {
+            (None, None) => false,
+            (None, Some(left)) => left.key == cur.key,
+            (Some(right), None) => right.key == cur.key,
+            (Some(right), Some(left)) => right.key == cur.key || left.key == cur.key,
+          };
+          if finished_subtrees || top.is_leaf() {
+            self.current = Some(top);
+            return Some(top);
+          } else {
+            self.stack.push(top);
+            if let Some(right) = top.right.as_deref() {
+              self.stack.push(right);
+            }
+            if let Some(left) = top.left.as_deref() {
+              self.stack.push(left);
             }
           }
-          self.current = None;
-          return Some(node);
         }
+        None
       }
     }
   }
