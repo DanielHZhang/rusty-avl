@@ -1,8 +1,8 @@
 use super::{
-  iter::NodePreorderIter,
+  iter::{NodeIterInorder, NodeIterPreorder},
   node::{Node, NodeOption, Tree},
 };
-use std::{cmp::Ordering, collections::VecDeque, fmt::Debug, vec::IntoIter};
+use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
 
 #[derive(Debug)]
 pub struct BinarySearchTree<K: Ord, V: PartialEq> {
@@ -279,11 +279,13 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
 
   fn left_rotation() {}
 
-  pub fn iter_preorder(&self) -> NodePreorderIter<K, V> {
-    NodePreorderIter::new(self.root.as_deref())
+  pub fn iter_preorder(&self) -> NodeIterPreorder<K, V> {
+    NodeIterPreorder::new(self.root.as_deref())
   }
 
-  pub fn iter_inorder(&self) {}
+  pub fn iter_inorder(&self) -> NodeIterInorder<K, V> {
+    NodeIterInorder::new(self.root.as_deref())
+  }
 
   pub fn iter_postorder() {}
 

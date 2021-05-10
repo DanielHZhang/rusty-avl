@@ -1,26 +1,26 @@
 use super::node::Node;
-pub struct NodePreorderIter<'a, K: Ord, V: PartialEq> {
+pub struct NodeIterPreorder<'a, K: Ord, V: PartialEq> {
   stack: Vec<&'a Node<K, V>>,
 }
 
-impl<'a, K: Ord, V: PartialEq> NodePreorderIter<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> NodeIterPreorder<'a, K, V> {
   pub fn new(root: Option<&'a Node<K, V>>) -> Self {
     match root {
-      None => NodePreorderIter::default(),
-      Some(node) => NodePreorderIter {
+      None => NodeIterPreorder::default(),
+      Some(node) => NodeIterPreorder {
         stack: Vec::from([node]),
       },
     }
   }
 }
 
-impl<K: Ord, V: PartialEq> Default for NodePreorderIter<'_, K, V> {
+impl<K: Ord, V: PartialEq> Default for NodeIterPreorder<'_, K, V> {
   fn default() -> Self {
-    NodePreorderIter { stack: Vec::new() }
+    NodeIterPreorder { stack: Vec::new() }
   }
 }
 
-impl<'a, K: Ord, V: PartialEq> Iterator for NodePreorderIter<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterPreorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {
@@ -40,21 +40,21 @@ impl<'a, K: Ord, V: PartialEq> Iterator for NodePreorderIter<'a, K, V> {
   }
 }
 
-struct NodeInorderIter<'a, K: Ord, V: PartialEq> {
+pub struct NodeIterInorder<'a, K: Ord, V: PartialEq> {
   stack: Vec<&'a Node<K, V>>,
   current: Option<&'a Node<K, V>>,
 }
 
-impl<'a, K: Ord, V: PartialEq> NodeInorderIter<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> NodeIterInorder<'a, K, V> {
   pub fn new(root: Option<&'a Node<K, V>>) -> Self {
-    NodeInorderIter {
+    NodeIterInorder {
       stack: Vec::new(),
       current: root,
     }
   }
 }
 
-impl<'a, K: Ord, V: PartialEq> Iterator for NodeInorderIter<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterInorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {
@@ -80,4 +80,8 @@ impl<'a, K: Ord, V: PartialEq> Iterator for NodeInorderIter<'a, K, V> {
       },
     }
   }
+}
+
+pub struct NodeIterPostorder<'a, K: Ord, V: PartialEq> {
+  stack: Vec<&'a Node<K, V>>,
 }
