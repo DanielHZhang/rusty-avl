@@ -281,26 +281,6 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
 
   pub fn iter_preorder(&self) -> NodePreorderIter<K, V> {
     NodePreorderIter::new(self.root.as_deref())
-    // match self.root.as_deref() {
-    //   None => Vec::new().into_iter(),
-    //   Some(root) => {
-    //     let mut stack = Vec::from([root]);
-    //     let mut result: Vec<&Node<K, V>> = Vec::with_capacity(self.size);
-    //     while !stack.is_empty() {
-    //       let top = stack.pop();
-    //       if let Some(node) = top {
-    //         result.push(node);
-    //         if let Some(right) = node.right.as_deref() {
-    //           stack.push(right);
-    //         }
-    //         if let Some(left) = node.left.as_deref() {
-    //           stack.push(left);
-    //         }
-    //       }
-    //     }
-    //     result.into_iter()
-    //   }
-    // }
   }
 
   pub fn iter_inorder(&self) {}
