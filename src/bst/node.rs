@@ -57,10 +57,6 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     }
     Some(cur)
   }
-
-  // pub fn iter(&self) -> NodePreorderIter<K, V> {
-  //   NodePreorderIter(self)
-  // }
 }
 
 pub trait NodeOption<K: Ord, V: PartialEq> {
@@ -95,35 +91,3 @@ impl<K: Ord, V: PartialEq> NodeOption<K, V> for Option<Box<Node<K, V>>> {
     cur.take()
   }
 }
-
-pub struct NodePreorderIter<'a, K: Ord, V: PartialEq> {
-  stack: Vec<&'a Node<K, V>>,
-}
-
-impl<'a, K: Ord, V: PartialEq> NodePreorderIter<'a, K, V> {
-  pub fn new(root: Option<&'a Node<K, V>>) -> Self {
-    match root {
-      None => NodePreorderIter::default(),
-      Some(node) => NodePreorderIter {
-        stack: Vec::from([node]),
-      },
-    }
-  }
-}
-
-impl<K: Ord, V: PartialEq> Default for NodePreorderIter<'_, K, V> {
-  fn default() -> Self {
-    NodePreorderIter { stack: Vec::new() }
-  }
-}
-
-impl<'a, K: Ord, V: PartialEq> Iterator for NodePreorderIter<'a, K, V> {
-  type Item = &'a Node<K, V>;
-
-  fn next(&mut self) -> Option<Self::Item> {
-    // match self.stack
-    None
-  }
-}
-
-struct NodeInorderIter<'a, K: Ord, V: PartialEq>(&'a Node<K, V>);

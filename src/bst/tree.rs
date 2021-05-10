@@ -1,5 +1,8 @@
-use super::node::{Node, NodeOption, NodePreorderIter, Tree};
-use std::{cmp::Ordering, collections::VecDeque, fmt::Debug, option::Iter, vec::IntoIter};
+use super::{
+  iter::NodePreorderIter,
+  node::{Node, NodeOption, Tree},
+};
+use std::{cmp::Ordering, collections::VecDeque, fmt::Debug, vec::IntoIter};
 
 #[derive(Debug)]
 pub struct BinarySearchTree<K: Ord, V: PartialEq> {
@@ -219,7 +222,7 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     }
   }
 
-  pub fn delete(&mut self, key: &K) -> bool {
+  pub fn delete(&mut self, key: K) -> bool {
     let mut cur = &mut self.root;
     while let Some(ref mut node) = cur {
       match key.cmp(&node.key) {
@@ -276,33 +279,31 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
 
   fn left_rotation() {}
 
-  pub fn iter_preorder(&self) -> IntoIter<&Node<K, V>> {
-    match self.root.as_deref() {
-      None => Vec::new().into_iter(),
-      Some(root) => {
-        let mut stack = Vec::from([root]);
-        let mut result: Vec<&Node<K, V>> = Vec::with_capacity(self.size);
-        while !stack.is_empty() {
-          let top = stack.pop();
-          if let Some(node) = top {
-            result.push(node);
-            if let Some(right) = node.right.as_deref() {
-              stack.push(right);
-            }
-            if let Some(left) = node.left.as_deref() {
-              stack.push(left);
-            }
-          }
-        }
-        result.into_iter()
-      }
-    }
+  pub fn iter_preorder(&self) -> NodePreorderIter<K, V> {
+    NodePreorderIter::new(self.root.as_deref())
+    // match self.root.as_deref() {
+    //   None => Vec::new().into_iter(),
+    //   Some(root) => {
+    //     let mut stack = Vec::from([root]);
+    //     let mut result: Vec<&Node<K, V>> = Vec::with_capacity(self.size);
+    //     while !stack.is_empty() {
+    //       let top = stack.pop();
+    //       if let Some(node) = top {
+    //         result.push(node);
+    //         if let Some(right) = node.right.as_deref() {
+    //           stack.push(right);
+    //         }
+    //         if let Some(left) = node.left.as_deref() {
+    //           stack.push(left);
+    //         }
+    //       }
+    //     }
+    //     result.into_iter()
+    //   }
+    // }
   }
 
-  pub fn iter_inorder(&self) {
-    let a = self.root.as_deref();
-    let w = NodePreorderIter::new(self.root.as_deref());
-  }
+  pub fn iter_inorder(&self) {}
 
   pub fn iter_postorder() {}
 
@@ -377,8 +378,8 @@ mod test {
     bst.insert(1, "one");
     bst.insert(10, "ten");
     bst.insert(9, "nine");
-    assert!(bst.delete(&2));
-    assert!(!bst.delete(&2));
+    assert!(bst.delete(2));
+    assert!(!bst.delete(2));
   }
 
   #[test]
