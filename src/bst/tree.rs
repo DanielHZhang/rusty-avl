@@ -11,20 +11,19 @@ pub struct BinarySearchTree<K: Ord, V: PartialEq> {
   avl: bool,
 }
 
-impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
-  pub fn new() -> Self {
+impl<K: Ord, V: PartialEq> Default for BinarySearchTree<K, V> {
+  fn default() -> Self {
     Self {
       root: None,
       size: 0,
       avl: false,
     }
   }
+}
 
-  pub fn new_avl() -> Self {
-    Self {
-      avl: true,
-      ..BinarySearchTree::new()
-    }
+impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
+  pub fn new() -> Self {
+    BinarySearchTree::default()
   }
 
   pub fn new_root(root: Node<K, V>) -> Self {
@@ -35,11 +34,22 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     }
   }
 
+  pub fn new_avl() -> Self {
+    Self {
+      avl: true,
+      ..BinarySearchTree::default()
+    }
+  }
+
   pub fn new_avl_root(root: Node<K, V>) -> Self {
     Self {
       avl: true,
       ..BinarySearchTree::new_root(root)
     }
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.root.is_none()
   }
 
   pub fn get(&self, key: &K) -> Option<&Node<K, V>> {
@@ -135,8 +145,8 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
               },
               Ordering::Equal => match node.right.as_deref() {
                 None => {
-                  // Trace backwards through visited parents
-                  for &parent in visited.iter().rev() {
+                  // Trace backwards through visited parents, until encountering successor
+                  for parent in visited.into_iter().rev() {
                     if parent.key > *key {
                       return Some(parent);
                     }
@@ -171,8 +181,8 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
               },
               Ordering::Equal => match node.left.as_deref() {
                 None => {
-                  // Trace backwards through visited parents
-                  for &parent in visited.iter().rev() {
+                  // Trace backwards through visited parents, until encounting predecessor
+                  for parent in visited.into_iter().rev() {
                     if parent.key < *key {
                       return Some(parent);
                     }
@@ -189,37 +199,34 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
   }
 
   pub fn insert(&mut self, key: K, value: V) -> bool {
-    match self.root.as_mut() {
-      None => {
-        self.root = Some(Box::new(Node::new(key, value)));
-        self.size += 1;
-        return true;
-      }
-      Some(node) => {
-        let mut cur = node;
-        loop {
-          let target = match key.cmp(&cur.key) {
-            Ordering::Less => &mut cur.left,
-            Ordering::Greater => &mut cur.right,
-            Ordering::Equal => {
-              if value == cur.value {
-                cur.count += 1;
-                return true;
-              }
-              return false;
-            }
-          };
-          match target {
-            None => {
-              *target = Some(Box::new(Node::new(key, value)));
-              self.size += 1;
-              return true;
-            }
-            Some(node) => cur = node,
+    let mut visited: Vec<*mut Node<K, V>> = Vec::new(); // Store raw mut pointers
+    let mut cur = &mut self.root;
+    // Find location to insert new node
+    while let Some(node) = cur {
+      visited.push(node.as_mut());
+      match key.cmp(&node.key) {
+        Ordering::Less => cur = &mut node.left,
+        Ordering::Greater => cur = &mut node.right,
+        Ordering::Equal => {
+          if value == node.value {
+            node.count += 1;
+            return true;
           }
+          return false;
         }
+      };
+    }
+    // Perform insertion
+    *cur = Some(Box::new(Node::new(key, value)));
+    self.size += 1;
+    if self.avl {
+      // Trace backwards through visited parents, updating their heights
+      for parent in visited.into_iter().rev() {
+        let node = unsafe { &mut *parent }; // Unsafe deferencing of raw pointer
+        node.update_height();
       }
     }
+    true
   }
 
   pub fn delete(&mut self, key: K) -> bool {
@@ -230,7 +237,7 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
         Ordering::Greater => cur = &mut cur.as_mut().unwrap().right,
         Ordering::Equal => {
           if node.count > 1 {
-            node.count -= 1;
+            node.count -= 1; // Decrement node count if there are duplicates
           } else {
             match (node.left.as_mut(), node.right.as_mut()) {
               (None, None) => *cur = None,
@@ -248,6 +255,13 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
       }
     }
     false
+  }
+
+  pub fn clear(&mut self) {}
+
+  /// Returns the number of nodes with unique keys contained in this tree.
+  pub fn len(&self) -> usize {
+    self.size
   }
 
   /// Height is considered the node count, not the edge count
@@ -276,14 +290,6 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     }
   }
 
-  pub fn to_balanced(self) {}
-
-  fn balance(&mut self) {}
-
-  fn right_rotation() {}
-
-  fn left_rotation() {}
-
   pub fn iter_preorder(&self) -> NodeIterPreorder<K, V> {
     NodeIterPreorder::new(self.root.as_deref())
   }
@@ -296,10 +302,7 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     NodeIterPostorder::new(self.root.as_deref())
   }
 
-  // pub fn into_vec(&self) -> Vec<&Node<K, V>> {
-  //   let mut new_vec = Vec::with_capacity(self.size);
-  //   new_vec
-  // }
+  fn rebalance(&mut self) {}
 }
 
 #[cfg(test)]
@@ -308,67 +311,81 @@ mod test {
   use super::Node;
 
   #[test]
-  fn init() {
-    // fn new (empty root)
-    let mut bst = BinarySearchTree::new();
-    assert!(bst.root.is_none());
-    bst.insert(2, 10);
-    // fn new_with_root (provided root)
+  fn new() {
+    let bst: BinarySearchTree<i32, i32> = BinarySearchTree::new();
+    assert!(bst.is_empty());
+    assert_eq!(bst.len(), 0);
+  }
+
+  #[test]
+  fn new_root() {
     let root = Node::new("key", "value");
     let bst = BinarySearchTree::new_root(root);
+    assert!(!bst.is_empty());
     assert!(bst.root.is_some());
-    let got_root = bst.root.unwrap();
-    assert_eq!(got_root.key, "key");
-    assert_eq!(got_root.value, "value");
+    assert_eq!(bst.len(), 1);
   }
 
   #[test]
   fn get() {
-    let mut bst = BinarySearchTree::new_root(Node::new(2, 2));
-    // fn get
-    let mut found = bst.get(&0);
+    let bst = BinarySearchTree::new_root(Node::new(2, 2));
+    let found = bst.get(&0);
     assert!(found.is_none());
-    found = bst.get(&2);
-    assert!(found.is_some());
-    let mut node = found.unwrap();
-    assert_eq!(node.key, 2);
-    assert_eq!(node.value, 2);
-    // fn get_mut
-    let found_mut = bst.get_mut(&2);
-    assert!(found_mut.is_some());
-    let mut node_mut = found_mut.unwrap();
-    node_mut.key = 5;
-    node_mut.value = 10;
-    found = bst.get(&5);
-    assert!(found.is_some());
-    node = found.unwrap();
-    assert_eq!(node.key, 5);
-    assert_eq!(node.value, 10);
-    // fn contains
+    let found = bst.get(&2).unwrap();
+    assert_eq!(found.key, 2);
+    assert_eq!(found.value, 2);
+  }
+
+  #[test]
+  fn get_mut() {
+    let mut bst = BinarySearchTree::new_root(Node::new(2, 2));
+    let found = bst.get_mut(&2).unwrap();
+    assert_eq!(found.key, 2);
+    assert_eq!(found.value, 2);
+    found.key = 5;
+    found.value = 10;
+    let found = bst.get_mut(&5).unwrap();
+    assert_eq!(found.key, 5);
+    assert_eq!(found.value, 10);
+  }
+
+  #[test]
+  fn contains() {
+    let bst = BinarySearchTree::new_root(Node::new(5, 2));
     assert!(bst.contains(&5));
     assert!(!bst.contains(&10));
   }
 
   #[test]
-  fn insertion() {
+  fn insert() {
     let mut bst = BinarySearchTree::new();
     assert!(bst.insert(2, 2));
     assert!(bst.insert(3, 3));
     assert!(bst.insert(2, 2));
     assert!(!bst.insert(2, 5));
+    assert_eq!(bst.len(), 2);
   }
 
   #[test]
-  fn removal() {
-    let mut bst = BinarySearchTree::new();
-    bst.insert(8, "eight");
-    bst.insert(2, "two");
-    bst.insert(5, "five");
-    bst.insert(1, "one");
-    bst.insert(10, "ten");
-    bst.insert(9, "nine");
-    assert!(bst.delete(2));
-    assert!(!bst.delete(2));
+  fn delete() {
+    // let mut bst = BinarySearchTree::new();
+    // bst.insert(8, "eight");
+    // bst.insert(2, "two");
+    // bst.insert(5, "five");
+    // bst.insert(1, "one");
+    // bst.insert(10, "ten");
+    // bst.insert(9, "nine");
+    // assert!(bst.delete(2));
+    // assert!(!bst.delete(2));
+    // assert!(bst.delete(10));
+    // assert_eq!(bst.len(), 4);
+    // assert!(bst.delete(9));
+    // assert!(bst.delete(8));
+    // // assert!(bst.delete(1));
+    // assert!(bst.delete(5));
+    // // assert!(bst.root.is_none());
+    // // assert_eq!(bst.len(), 0);
+    // println!("{:?}", bst.root.as_deref().unwrap());
   }
 
   #[test]
@@ -412,5 +429,41 @@ mod test {
     suc = bst.successor(&7).expect("Successor of key 7 way not found");
     assert_eq!(suc.key, 8);
     assert!(bst.successor(&8).is_none());
+  }
+
+  fn iter_test_setup() -> BinarySearchTree<i32, i32> {
+    let insertion_order = Vec::from([6, 3, 8, 1, 2, 9, 5, 4, 7, 10]);
+    let mut bst = BinarySearchTree::new();
+    for key in insertion_order {
+      bst.insert(key, key);
+    }
+    bst
+  }
+
+  #[test]
+  fn iter_preorder() {
+    let bst = iter_test_setup();
+    let expected = Vec::from([6, 3, 1, 2, 5, 4, 8, 7, 9, 10]);
+    for (index, node) in bst.iter_preorder().enumerate() {
+      assert_eq!(node.key, expected[index]);
+    }
+  }
+
+  #[test]
+  fn iter_inorder() {
+    let bst = iter_test_setup();
+    let expected: Vec<i32> = (1..=10).collect();
+    for (index, node) in bst.iter_inorder().enumerate() {
+      assert_eq!(node.key, expected[index]);
+    }
+  }
+
+  #[test]
+  fn iter_postorder() {
+    let bst = iter_test_setup();
+    let expected = Vec::from([2, 1, 4, 5, 3, 7, 10, 9, 8, 6]);
+    for (index, node) in bst.iter_postorder().enumerate() {
+      assert_eq!(node.key, expected[index]);
+    }
   }
 }

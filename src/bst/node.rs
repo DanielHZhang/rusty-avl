@@ -1,9 +1,10 @@
-use std::fmt::Debug;
+use std::{cmp::max, fmt::Debug, mem, usize};
 
 pub type Tree<K, V> = Option<Box<Node<K, V>>>;
 
 #[derive(Debug)]
 pub struct Node<K: Ord, V: PartialEq> {
+  height: usize,
   pub key: K,
   pub value: V,
   pub count: u32,
@@ -17,8 +18,20 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
       key,
       value,
       count: 0,
+      height: 0,
       left: None,
       right: None,
+    }
+  }
+
+  pub fn branch(key: K, value: V, left: Self, right: Self) -> Self {
+    Self {
+      key,
+      value,
+      count: 0,
+      height: 0,
+      left: Some(Box::new(left)),
+      right: Some(Box::new(right)),
     }
   }
 
@@ -57,6 +70,63 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     }
     Some(cur)
   }
+
+  fn left_height(&self) -> usize {
+    self.left.as_ref().map_or(0, |left| left.height)
+  }
+
+  fn right_height(&self) -> usize {
+    self.right.as_ref().map_or(0, |right| right.height)
+  }
+
+  pub fn update_height(&mut self) {
+    self.height = 1 + max(self.left_height(), self.right_height());
+  }
+
+  pub fn balance_factor(&mut self) -> i8 {
+    let left_height = self.left_height();
+    let right_height = self.right_height();
+    if left_height >= right_height {
+      (left_height - right_height) as i8
+    } else {
+      -((right_height - left_height) as i8)
+    }
+  }
+
+  /// Assuming you are at the parent node to be demoted
+  pub fn rotate_left(&mut self) -> bool {
+    if self.right.is_none() {
+      return false;
+    }
+    let right = self.right.as_mut().unwrap();
+    let right_left = right.left.take();
+    let right_right = right.right.take();
+    let mut new_root = mem::replace(&mut self.right, right_left);
+    let new_root_node = new_root.as_deref_mut().unwrap();
+    mem::swap(self, new_root_node);
+    self.left = new_root; // New root now contains old self
+    self.right = right_right;
+    true
+  }
+
+  /// Assuming you are at the parent node to be demoted
+  pub fn rotate_right(&mut self) -> bool {
+    if self.left.is_none() {
+      return false;
+    }
+    let left = self.left.as_mut().unwrap();
+    let left_left = left.left.take();
+    let left_right = left.right.take();
+    let mut new_root = mem::replace(&mut self.left, left_right);
+    let new_root_node = new_root.as_deref_mut().unwrap();
+    mem::swap(self, new_root_node);
+    // mem::swap(&mut self.value, &mut new_root_node.value);
+    // mem::swap(&mut self.key, &mut new_root_node.key);
+    // mem::swap(&mut self.count, &mut new_root_node.count);
+    self.left = left_left;
+    self.right = new_root; // New root now contains old self
+    true
+  }
 }
 
 pub trait NodeOption<K: Ord, V: PartialEq> {
@@ -89,5 +159,49 @@ impl<K: Ord, V: PartialEq> NodeOption<K, V> for Option<Box<Node<K, V>>> {
       cur = &mut cur.as_mut().unwrap().right;
     }
     cur.take()
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use super::Node;
+  use crate::bst::iter::{NodeIterPostorder, NodeIterPreorder};
+
+  #[test]
+  fn rotate_right() {
+    let mut root = Node::branch(
+      4,
+      4,
+      Node::branch(2, 2, Node::new(1, 1), Node::new(3, 3)),
+      Node::new(5, 5),
+    );
+    assert!(root.rotate_right());
+    let expected_preorder = Vec::from([2, 1, 4, 3, 5]);
+    for (index, node) in NodeIterPreorder::new(Some(&root)).enumerate() {
+      assert_eq!(node.key, expected_preorder[index]);
+    }
+    let expected_postorder = Vec::from([1, 3, 5, 4, 2]);
+    for (index, node) in NodeIterPostorder::new(Some(&root)).enumerate() {
+      assert_eq!(node.key, expected_postorder[index]);
+    }
+  }
+
+  #[test]
+  fn rotate_left() {
+    let mut root = Node::branch(
+      2,
+      2,
+      Node::new(1, 1),
+      Node::branch(4, 4, Node::new(3, 3), Node::new(5, 5)),
+    );
+    assert!(root.rotate_left());
+    let expected_preorder = Vec::from([4, 2, 1, 3, 5]);
+    for (index, node) in NodeIterPreorder::new(Some(&root)).enumerate() {
+      assert_eq!(node.key, expected_preorder[index]);
+    }
+    let expected_postorder = Vec::from([1, 3, 2, 5, 4]);
+    for (index, node) in NodeIterPostorder::new(Some(&root)).enumerate() {
+      assert_eq!(node.key, expected_postorder[index]);
+    }
   }
 }
