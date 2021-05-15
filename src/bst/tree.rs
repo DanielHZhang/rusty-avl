@@ -224,6 +224,7 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
       for parent in visited.into_iter().rev() {
         let node = unsafe { &mut *parent }; // Unsafe deferencing of raw pointer
         node.update_height();
+        node.rebalance();
       }
     }
     true
@@ -257,7 +258,10 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     false
   }
 
-  pub fn clear(&mut self) {}
+  pub fn clear(&mut self) {
+    self.root.take();
+    self.size = 0;
+  }
 
   /// Returns the number of nodes with unique keys contained in this tree.
   pub fn len(&self) -> usize {
@@ -290,19 +294,20 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     }
   }
 
+  /// Returns an iterator that performs a pre-order traversal of the tree
   pub fn iter_preorder(&self) -> NodeIterPreorder<K, V> {
     NodeIterPreorder::new(self.root.as_deref())
   }
 
+  /// Returns an iterator that performs an in-order traversal of the tree
   pub fn iter_inorder(&self) -> NodeIterInorder<K, V> {
     NodeIterInorder::new(self.root.as_deref())
   }
 
+  /// Returns an iterator that performs a post-order traversal of the tree
   pub fn iter_postorder(&self) -> NodeIterPostorder<K, V> {
     NodeIterPostorder::new(self.root.as_deref())
   }
-
-  fn rebalance(&mut self) {}
 }
 
 #[cfg(test)]

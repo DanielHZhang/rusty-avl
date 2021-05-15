@@ -2,6 +2,12 @@ use std::{cmp::max, fmt::Debug, mem, usize};
 
 pub type Tree<K, V> = Option<Box<Node<K, V>>>;
 
+enum BF {
+  Balanced,
+  LeftHeavy(u8),
+  RightHeavy(u8),
+}
+
 #[derive(Debug)]
 pub struct Node<K: Ord, V: PartialEq> {
   height: usize,
@@ -79,18 +85,20 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     self.right.as_ref().map_or(0, |right| right.height)
   }
 
-  pub fn update_height(&mut self) {
-    self.height = 1 + max(self.left_height(), self.right_height());
-  }
-
-  pub fn balance_factor(&mut self) -> i8 {
+  fn balance_factor(&mut self) -> BF {
     let left_height = self.left_height();
     let right_height = self.right_height();
-    if left_height >= right_height {
-      (left_height - right_height) as i8
+    if left_height > right_height {
+      BF::LeftHeavy((left_height - right_height) as u8)
+    } else if left_height < right_height {
+      BF::RightHeavy((right_height - left_height) as u8)
     } else {
-      -((right_height - left_height) as i8)
+      BF::Balanced
     }
+  }
+
+  pub fn update_height(&mut self) {
+    self.height = 1 + max(self.left_height(), self.right_height());
   }
 
   /// Assuming you are at the parent node to be demoted
@@ -102,8 +110,7 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     let right_left = right.left.take();
     let right_right = right.right.take();
     let mut new_root = mem::replace(&mut self.right, right_left);
-    let new_root_node = new_root.as_deref_mut().unwrap();
-    mem::swap(self, new_root_node);
+    mem::swap(self, new_root.as_deref_mut().unwrap());
     self.left = new_root; // New root now contains old self
     self.right = right_right;
     true
@@ -126,6 +133,32 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     self.left = left_left;
     self.right = new_root; // New root now contains old self
     true
+  }
+
+  pub fn rebalance(&mut self) -> bool {
+    match self.balance_factor() {
+      BF::RightHeavy(2) => match self.right.as_deref_mut() {
+        None => false,
+        Some(right_child) => {
+          // Check if right child of root is left heavy
+          if let BF::LeftHeavy(1) = right_child.balance_factor() {
+            right_child.rotate_right();
+          }
+          self.rotate_left()
+        }
+      },
+      BF::LeftHeavy(2) => match self.left.as_deref_mut() {
+        None => false,
+        Some(left_child) => {
+          // Check if left child of root is right heavy
+          if let BF::RightHeavy(1) = left_child.balance_factor() {
+            left_child.rotate_left();
+          }
+          self.rotate_right()
+        }
+      },
+      _ => false, // No rebalancing required
+    }
   }
 }
 
