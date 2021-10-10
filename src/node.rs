@@ -2,7 +2,7 @@ use std::{cmp::max, fmt::Debug, mem, usize};
 
 pub type Branch<K, V> = Option<Box<Node<K, V>>>;
 
-enum BF {
+enum BalanceFactor {
   Balanced,
   LeftHeavy(u8),
   RightHeavy(u8),
@@ -45,15 +45,21 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     self.left.is_none() && self.right.is_none()
   }
 
-  pub fn smallest(&self) -> Option<&Self> {
+  pub(crate) fn smallest(&self) -> Option<&Self> {
+    if self.is_leaf() {
+      return None;
+    }
     let mut cur = self;
-    while let Some(ref node) = cur.left {
+    while let Some(node) = &cur.left {
       cur = node.as_ref();
     }
     Some(cur)
   }
 
-  pub fn smallest_mut(&mut self) -> Option<&mut Self> {
+  pub(crate) fn smallest_mut(&mut self) -> Option<&mut Self> {
+    if self.is_leaf() {
+      return None;
+    }
     let mut cur = self;
     while let Some(ref mut node) = cur.left {
       cur = node.as_mut();
@@ -61,15 +67,21 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     Some(cur)
   }
 
-  pub fn largest(&self) -> Option<&Self> {
+  pub(crate) fn largest(&self) -> Option<&Self> {
+    if self.is_leaf() {
+      return None;
+    }
     let mut cur = self;
-    while let Some(ref node) = cur.right {
+    while let Some(node) = &cur.right {
       cur = node.as_ref();
     }
     Some(cur)
   }
 
-  pub fn largest_mut(&mut self) -> Option<&mut Self> {
+  pub(crate) fn largest_mut(&mut self) -> Option<&mut Self> {
+    if self.is_leaf() {
+      return None;
+    }
     let mut cur = self;
     while let Some(ref mut node) = cur.right {
       cur = node.as_mut();
@@ -85,15 +97,15 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     self.right.as_ref().map_or(0, |right| right.height)
   }
 
-  fn balance_factor(&mut self) -> BF {
+  fn balance_factor(&mut self) -> BalanceFactor {
     let left_height = self.left_height();
     let right_height = self.right_height();
     if left_height > right_height {
-      BF::LeftHeavy((left_height - right_height) as u8)
+      BalanceFactor::LeftHeavy((left_height - right_height) as u8)
     } else if left_height < right_height {
-      BF::RightHeavy((right_height - left_height) as u8)
+      BalanceFactor::RightHeavy((right_height - left_height) as u8)
     } else {
-      BF::Balanced
+      BalanceFactor::Balanced
     }
   }
 
@@ -137,21 +149,21 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
 
   pub fn rebalance(&mut self) -> bool {
     match self.balance_factor() {
-      BF::RightHeavy(2) => match self.right.as_deref_mut() {
+      BalanceFactor::RightHeavy(2) => match self.right.as_deref_mut() {
         None => false,
         Some(right_child) => {
           // Check if right child of root is left heavy
-          if let BF::LeftHeavy(1) = right_child.balance_factor() {
+          if let BalanceFactor::LeftHeavy(1) = right_child.balance_factor() {
             right_child.rotate_right();
           }
           self.rotate_left()
         }
       },
-      BF::LeftHeavy(2) => match self.left.as_deref_mut() {
+      BalanceFactor::LeftHeavy(2) => match self.left.as_deref_mut() {
         None => false,
         Some(left_child) => {
           // Check if left child of root is right heavy
-          if let BF::RightHeavy(1) = left_child.balance_factor() {
+          if let BalanceFactor::RightHeavy(1) = left_child.balance_factor() {
             left_child.rotate_left();
           }
           self.rotate_right()

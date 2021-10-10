@@ -101,16 +101,8 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
   }
 
   pub fn smallest(&mut self) -> Option<&mut Node<K, V>> {
-    match self.root {
-      None => None,
-      Some(ref mut root) => {
-        let mut cur = root;
-        while let Some(ref mut node) = cur.left {
-          cur = node;
-        }
-        Some(cur.as_mut())
-      }
-    }
+    let a = self.root.as_mut().unwrap().smallest_mut();
+    a
   }
 
   pub fn largest(&mut self) -> Option<&mut Node<K, V>> {

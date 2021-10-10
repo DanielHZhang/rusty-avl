@@ -1,0 +1,53 @@
+{
+	"[css]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[javascriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[rust]": {
+		"editor.defaultFormatter": "matklad.rust-analyzer",
+		"editor.snippetSuggestions": "bottom",
+		"editor.wordBasedSuggestions": false,
+		"editor.quickSuggestionsDelay": 100,
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": true
+	},
+	"eslint.packageManager": "yarn",
+	"eslint.validate": [
+		"javascript",
+		"javascriptreact",
+		"typescript",
+		"typescriptreact"
+	],
+	"files.watcherExclude": {
+		"**/.git/objects/**": true,
+		"**/.git/subtree-cache/**": true,
+		"**/.hg/store/**": true,
+		"**/target/**": true
+	},
+	"html.autoClosingTags": true,
+	"javascript.autoClosingTags": true,
+	// See: https://github.com/rust-analyzer/rust-analyzer/issues/8933
+	"rust-analyzer.completion.addCallArgumentSnippets": false,
+	"rust-analyzer.diagnostics.disabled": [
+		"unresolved-macro-call",
+	],
+	"terminal.integrated.defaultProfile.windows": "Git Bash",
+	"typescript.autoClosingTags": true,
+	"typescript.reportStyleChecksAsWarnings": true,
+	"typescript.preferences.importModuleSpecifier": "non-relative",
+	"typescript.preferences.quoteStyle": "single",
+	"typescript.preferences.useAliasesForRenames": false,
+	"typescript.tsdk": "node_modules/typescript/lib",
+}
