@@ -2,7 +2,7 @@ use super::{
   iter::{NodeIterInorder, NodeIterPostorder, NodeIterPreorder},
   node::{Branch, Node, NodeOption},
 };
-use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
+use std::{cmp::Ordering, collections::VecDeque, error::Error, fmt::Debug};
 
 #[derive(Debug)]
 pub struct AvlTree<K: Ord, V: PartialEq> {
@@ -22,6 +22,7 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
 // TODO: implement FromIterator for AvlTree
 
 impl<K: Ord, V: PartialEq> AvlTree<K, V> {
+  /// Constructs a new AVL tree with an empty root.
   pub fn new(root: Node<K, V>) -> Self {
     Self {
       root: Some(Box::new(root)),
@@ -29,14 +30,28 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
     }
   }
 
+  /// Returns true if the AVL tree contains no nodes.
   pub fn is_empty(&self) -> bool {
     self.root.is_none()
   }
 
+  /// Returns true if the AVL tree contains a node with the provided key.
   pub fn contains(&self, key: &K) -> bool {
     self.get(&key).is_some()
   }
 
+  /// Clears the AVL tree, removing all nodes.
+  pub fn clear(&mut self) {
+    self.root.take();
+    self.size = 0;
+  }
+
+  /// Returns the number of unique nodes within the AVL tree.
+  pub fn len(&self) -> usize {
+    self.size
+  }
+
+  /// Returns a reference to the node with the provided key.
   pub fn get(&self, target: &K) -> Option<&Node<K, V>> {
     self
       .root
@@ -85,6 +100,97 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
         }
       })
       .unwrap_or(None)
+  }
+
+  pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+    let mut visited: Vec<*mut Node<K, V>> = Vec::new(); // Store raw mut pointers
+    let mut cur = &mut self.root;
+
+    while let Some(ref mut node) = cur {
+      visited.push(node.as_mut());
+      match key.cmp(&node.key) {
+        Ordering::Less => cur = &mut node.left,
+        Ordering::Greater => cur = &mut node.right,
+        Ordering::Equal => {
+          let old = std::mem::replace(&mut node.value, value);
+          return Some(old);
+        }
+      };
+    }
+
+    *cur = Some(Box::new(Node::new(key, value)));
+    self.size += 1;
+
+    // Trace backwards through visited parents, updating their heights
+    for parent in visited.into_iter().rev() {
+      let node = unsafe { &mut *parent };
+      node.update_height();
+      node.rebalance();
+    }
+    None
+  }
+
+  pub fn remove(&mut self, key: &K) -> Option<Node<K, V>> {
+    let mut visited: Vec<*mut Node<K, V>> = Vec::new();
+    let mut cur = &mut self.root;
+    while let Some(node) = cur.as_deref() {
+      match key.cmp(&node.key) {
+        Ordering::Less => {
+          let cur_node = cur.as_deref_mut().unwrap();
+          visited.push(cur_node);
+          cur = &mut cur_node.left;
+        }
+        Ordering::Greater => {
+          let cur_node = cur.as_deref_mut().unwrap();
+          visited.push(cur_node);
+          cur = &mut cur_node.right;
+        }
+        Ordering::Equal => {
+          break;
+        }
+      }
+    }
+    if cur.is_none() {
+      return None;
+    }
+    let node = cur.as_mut().unwrap();
+    // if node.count > 1 {
+    //   node.count -= 1;
+    // } else {
+    match (node.left.as_mut(), node.right.as_mut()) {
+      (None, None) => *cur = None,
+      (Some(_), None) => *cur = node.left.take(),
+      (None, Some(_)) => *cur = node.right.take(),
+      (Some(_), Some(_)) => {
+        let left = node.left.take();
+        let extracted = node.right.extract_min();
+        // todo: need to call delete on the node.right after finding smallest,
+        // otherwise node.right may have a right child which gets inadvertently removed
+      } // }
+    }
+
+    for parent in visited.into_iter().rev() {
+      let node = unsafe { &mut *parent };
+      node.update_height();
+      node.rebalance();
+    }
+    //   if node.count > 1 {
+    //     node.count -= 1; // Decrement node count if there are duplicates
+    //   } else {
+    //     match (node.left.as_mut(), node.right.as_mut()) {
+    //       (None, None) => *cur = None,
+    //       (Some(_), None) => *cur = node.left.take(),
+    //       (None, Some(_)) => *cur = node.right.take(),
+    //       (Some(_), Some(_)) => *cur = node.right.extract_min(),
+    //     }
+    //   }
+    //   self.size -= 1;
+    //   if self.avl {
+    //     //
+    //   }
+    //   return true;
+    // break;
+    None
   }
 
   pub fn smallest(&self) -> Option<&Node<K, V>> {
@@ -191,110 +297,6 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
     }
   }
 
-  pub fn insert(&mut self, key: K, value: V) -> bool {
-    let mut visited: Vec<*mut Node<K, V>> = Vec::new(); // Store raw mut pointers
-    let mut cur = &mut self.root;
-    // Find location to insert new node
-    while let Some(node) = cur {
-      visited.push(node.as_mut());
-      match key.cmp(&node.key) {
-        Ordering::Less => cur = &mut node.left,
-        Ordering::Greater => cur = &mut node.right,
-        Ordering::Equal => {
-          if value == node.value {
-            node.count += 1;
-            return true;
-          }
-          return false;
-        }
-      };
-    }
-    // Perform insertion
-    *cur = Some(Box::new(Node::new(key, value)));
-    self.size += 1;
-    // Trace backwards through visited parents, updating their heights
-    for parent in visited.into_iter().rev() {
-      let node = unsafe { &mut *parent }; // Unsafe deferencing of raw pointer
-      node.update_height();
-      node.rebalance();
-    }
-    true
-  }
-
-  pub fn remove(&mut self, key: &K) -> Option<Node<K, V>> {
-    let mut visited: Vec<*mut Node<K, V>> = Vec::new();
-    let mut cur = &mut self.root;
-    while let Some(node) = cur.as_deref() {
-      match key.cmp(&node.key) {
-        Ordering::Less => {
-          let cur_node = cur.as_deref_mut().unwrap();
-          visited.push(cur_node);
-          cur = &mut cur_node.left;
-        }
-        Ordering::Greater => {
-          let cur_node = cur.as_deref_mut().unwrap();
-          visited.push(cur_node);
-          cur = &mut cur_node.right;
-        }
-        Ordering::Equal => {
-          break;
-        }
-      }
-    }
-    if cur.is_none() {
-      return None;
-    }
-    let node = cur.as_mut().unwrap();
-    if node.count > 1 {
-      node.count -= 1;
-    } else {
-      match (node.left.as_mut(), node.right.as_mut()) {
-        (None, None) => *cur = None,
-        (Some(_), None) => *cur = node.left.take(),
-        (None, Some(_)) => *cur = node.right.take(),
-        (Some(_), Some(_)) => {
-          let left = node.left.take();
-          let extracted = node.right.extract_min();
-          // todo: need to call delete on the node.right after finding smallest,
-          // otherwise node.right may have a right child which gets inadvertently removed
-        }
-      }
-    }
-
-    for parent in visited.into_iter().rev() {
-      let node = unsafe { &mut *parent };
-      node.update_height();
-      node.rebalance();
-    }
-    //   if node.count > 1 {
-    //     node.count -= 1; // Decrement node count if there are duplicates
-    //   } else {
-    //     match (node.left.as_mut(), node.right.as_mut()) {
-    //       (None, None) => *cur = None,
-    //       (Some(_), None) => *cur = node.left.take(),
-    //       (None, Some(_)) => *cur = node.right.take(),
-    //       (Some(_), Some(_)) => *cur = node.right.extract_min(),
-    //     }
-    //   }
-    //   self.size -= 1;
-    //   if self.avl {
-    //     //
-    //   }
-    //   return true;
-    // break;
-    None
-  }
-
-  pub fn clear(&mut self) {
-    self.root.take();
-    self.size = 0;
-  }
-
-  /// Returns the number of nodes with unique keys contained in this tree.
-  pub fn len(&self) -> usize {
-    self.size
-  }
-
   /// Height is considered the node count, not the edge count
   pub fn height(&self) -> usize {
     match self.root.as_deref() {
@@ -345,8 +347,8 @@ mod test {
   #[test]
   fn new() {
     let avl: AvlTree<i32, i32> = AvlTree::default();
-    assert!(avl.root.is_some());
-    assert!(!avl.is_empty());
+    assert!(avl.root.is_none());
+    assert!(avl.is_empty());
     assert_eq!(avl.len(), 0);
 
     let avl = AvlTree::new(Node::new("key", "value"));
@@ -387,12 +389,20 @@ mod test {
 
   #[test]
   fn insert() {
-    let mut bst = AvlTree::default();
-    assert!(bst.insert(2, 2));
-    assert!(bst.insert(3, 3));
-    assert!(bst.insert(2, 2));
-    assert!(!bst.insert(2, 5));
-    assert_eq!(bst.len(), 2);
+    let mut avl = AvlTree::default();
+
+    // Inserting unique keys should return None
+    assert!(avl.insert(1, 2).is_none());
+    assert!(avl.insert(2, 4).is_none());
+    assert!(avl.insert(3, 6).is_none());
+    assert!(avl.insert(4, 8).is_none());
+
+    // Length should be updated
+    assert_eq!(avl.len(), 4);
+
+    // Inserting existing keys should return previous value
+    assert_eq!(avl.insert(2, 9).unwrap(), 4);
+    assert_eq!(avl.insert(4, 5).unwrap(), 8);
   }
 
   #[test]

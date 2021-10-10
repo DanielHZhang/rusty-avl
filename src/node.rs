@@ -13,7 +13,6 @@ pub struct Node<K: Ord, V: PartialEq> {
   height: usize,
   pub key: K,
   pub value: V,
-  pub count: u32,
   pub left: Branch<K, V>,
   pub right: Branch<K, V>,
 }
@@ -23,7 +22,6 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     Self {
       key,
       value,
-      count: 0,
       height: 0,
       left: None,
       right: None,
@@ -34,7 +32,6 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
     Self {
       key,
       value,
-      count: 0,
       height: 0,
       left: Some(Box::new(left)),
       right: Some(Box::new(right)),
