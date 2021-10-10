@@ -21,6 +21,8 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
   }
 }
 
+// TODO: implement FromIterator for AvlTree
+
 impl<K: Ord, V: PartialEq> AvlTree<K, V> {
   pub fn new() -> Self {
     AvlTree::default()
@@ -439,17 +441,30 @@ mod test {
 
   #[test]
   fn smallest() {
-    let mut bst = AvlTree::new();
-    bst.insert(5, "five");
-    bst.insert(2, "two");
-    bst.insert(1, "one");
-    let small = bst.smallest();
-    assert!(small.is_some());
-    let node = small.unwrap();
-    assert_eq!(node.key, 1);
-    assert!(bst.get(&5).is_some());
-    assert!(bst.get(&2).is_some());
-    assert!(bst.get(&1).is_some());
+    let mut avl = AvlTree::new();
+    avl.insert(5, "five");
+    avl.insert(2, "two");
+    avl.insert(1, "one");
+
+    let smallest_mut = avl.smallest_mut();
+    assert_eq!(smallest_mut.unwrap().key, 1);
+
+    let smallest = avl.smallest();
+    assert_eq!(smallest.unwrap().key, 1);
+  }
+
+  #[test]
+  fn largest() {
+    let mut avl = AvlTree::new();
+    avl.insert(5, "five");
+    avl.insert(10, "ten");
+    avl.insert(16, "sixteen");
+
+    let largest_mut = avl.largest_mut();
+    assert_eq!(largest_mut.unwrap().key, 16);
+
+    let largest = avl.largest();
+    assert_eq!(largest.unwrap().key, 16);
   }
 
   #[test]
