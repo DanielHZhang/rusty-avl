@@ -230,32 +230,70 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
     true
   }
 
-  pub fn delete(&mut self, key: K) -> bool {
+  pub fn delete(&mut self, key: &K) -> Option<Node<K, V>> {
+    let mut visited: Vec<*mut Node<K, V>> = Vec::new();
     let mut cur = &mut self.root;
-    while let Some(ref mut node) = cur {
+    while let Some(node) = cur.as_deref() {
       match key.cmp(&node.key) {
-        Ordering::Less => cur = &mut cur.as_mut().unwrap().left,
-        Ordering::Greater => cur = &mut cur.as_mut().unwrap().right,
+        Ordering::Less => {
+          let cur_node = cur.as_deref_mut().unwrap();
+          visited.push(cur_node);
+          cur = &mut cur_node.left;
+        }
+        Ordering::Greater => {
+          let cur_node = cur.as_deref_mut().unwrap();
+          visited.push(cur_node);
+          cur = &mut cur_node.right;
+        }
         Ordering::Equal => {
-          if node.count > 1 {
-            node.count -= 1; // Decrement node count if there are duplicates
-          } else {
-            match (node.left.as_mut(), node.right.as_mut()) {
-              (None, None) => *cur = None,
-              (Some(_), None) => *cur = node.left.take(),
-              (None, Some(_)) => *cur = node.right.take(),
-              (Some(_), Some(_)) => *cur = node.right.extract_min(),
-            }
-          }
-          self.size -= 1;
-          if self.avl {
-            //
-          }
-          return true;
+          break;
         }
       }
     }
-    false
+    if cur.is_none() {
+      return None;
+    }
+    let node = cur.as_mut().unwrap();
+    if node.count > 1 {
+      node.count -= 1;
+    } else {
+      match (node.left.as_mut(), node.right.as_mut()) {
+        (None, None) => *cur = None,
+        (Some(_), None) => *cur = node.left.take(),
+        (None, Some(_)) => *cur = node.right.take(),
+        (Some(_), Some(_)) => {
+          let left = node.left.take();
+          let extracted = node.right.extract_min();
+          // todo: need to call delete on the node.right after finding smallest,
+          // otherwise node.right may have a right child which gets inadvertently removed
+        }
+      }
+    }
+
+    if self.avl {
+      for parent in visited.into_iter().rev() {
+        let node = unsafe { &mut *parent };
+        node.update_height();
+        node.rebalance();
+      }
+    }
+    //   if node.count > 1 {
+    //     node.count -= 1; // Decrement node count if there are duplicates
+    //   } else {
+    //     match (node.left.as_mut(), node.right.as_mut()) {
+    //       (None, None) => *cur = None,
+    //       (Some(_), None) => *cur = node.left.take(),
+    //       (None, Some(_)) => *cur = node.right.take(),
+    //       (Some(_), Some(_)) => *cur = node.right.extract_min(),
+    //     }
+    //   }
+    //   self.size -= 1;
+    //   if self.avl {
+    //     //
+    //   }
+    //   return true;
+    // break;
+    None
   }
 
   pub fn clear(&mut self) {

@@ -198,7 +198,7 @@ impl<K: Ord, V: PartialEq> NodeOption<K, V> for Option<Box<Node<K, V>>> {
 #[cfg(test)]
 mod test {
   use super::Node;
-  use crate::bst::iter::{NodeIterPostorder, NodeIterPreorder};
+  use crate::tree::iter::{NodeIterPostorder, NodeIterPreorder};
 
   #[test]
   fn rotate_right() {
