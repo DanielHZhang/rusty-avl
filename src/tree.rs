@@ -33,52 +33,58 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
     self.root.is_none()
   }
 
-  pub fn get(&self, key: &K) -> Option<&Node<K, V>> {
-    match self.root.as_ref() {
-      None => None,
-      Some(node) => {
-        let mut cur = node;
-        loop {
-          let target = match key.cmp(&cur.key) {
-            Ordering::Less => &cur.left,
-            Ordering::Greater => &cur.right,
-            Ordering::Equal => {
-              return Some(cur.as_ref());
-            }
-          };
-          match target {
-            None => return None,
-            Some(node) => cur = node,
-          }
-        }
-      }
-    }
-  }
-
-  pub fn get_mut(&mut self, key: &K) -> Option<&mut Node<K, V>> {
-    match self.root.as_mut() {
-      None => None,
-      Some(node) => {
-        let mut cur = node;
-        loop {
-          let target = match key.cmp(&cur.key) {
-            Ordering::Less => &mut cur.left,
-            Ordering::Greater => &mut cur.right,
-            Ordering::Equal => {
-              return Some(cur.as_mut());
-            }
-          };
-          match target {
-            None => return None,
-            Some(node) => cur = node,
-          }
-        }
-      }
-    }
-  }
-
   pub fn contains(&self, key: &K) -> bool {
     self.get(&key).is_some()
+  }
+
+  pub fn get(&self, target: &K) -> Option<&Node<K, V>> {
+    self
+      .root
+      .as_ref()
+      .map(|root| {
+        let mut cur = root;
+        loop {
+          if target < &cur.key {
+            cur = match &cur.left {
+              Some(node) => node,
+              None => return None,
+            };
+          } else if target > &cur.key {
+            cur = match &cur.right {
+              Some(node) => node,
+              None => return None,
+            };
+          } else {
+            return Some(cur.as_ref());
+          }
+        }
+      })
+      .unwrap_or(None)
+  }
+
+  pub fn get_mut(&mut self, target: &K) -> Option<&mut Node<K, V>> {
+    self
+      .root
+      .as_mut()
+      .map(|root| {
+        let mut cur = root;
+        loop {
+          if target < &cur.key {
+            cur = match &mut cur.left {
+              Some(node) => node,
+              None => return None,
+            };
+          } else if target > &cur.key {
+            cur = match &mut cur.right {
+              Some(node) => node,
+              None => return None,
+            };
+          } else {
+            return Some(cur.as_mut());
+          }
+        }
+      })
+      .unwrap_or(None)
   }
 
   pub fn smallest(&self) -> Option<&Node<K, V>> {
