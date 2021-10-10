@@ -5,13 +5,13 @@ use super::{
 use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
 
 #[derive(Debug)]
-pub struct BinarySearchTree<K: Ord, V: PartialEq> {
+pub struct AvlTree<K: Ord, V: PartialEq> {
   root: Tree<K, V>,
   size: usize,
   avl: bool,
 }
 
-impl<K: Ord, V: PartialEq> Default for BinarySearchTree<K, V> {
+impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
   fn default() -> Self {
     Self {
       root: None,
@@ -21,9 +21,9 @@ impl<K: Ord, V: PartialEq> Default for BinarySearchTree<K, V> {
   }
 }
 
-impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
+impl<K: Ord, V: PartialEq> AvlTree<K, V> {
   pub fn new() -> Self {
-    BinarySearchTree::default()
+    AvlTree::default()
   }
 
   pub fn new_root(root: Node<K, V>) -> Self {
@@ -37,14 +37,14 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
   pub fn new_avl() -> Self {
     Self {
       avl: true,
-      ..BinarySearchTree::default()
+      ..AvlTree::default()
     }
   }
 
   pub fn new_avl_root(root: Node<K, V>) -> Self {
     Self {
       avl: true,
-      ..BinarySearchTree::new_root(root)
+      ..AvlTree::new_root(root)
     }
   }
 
@@ -350,12 +350,12 @@ impl<K: Ord, V: PartialEq> BinarySearchTree<K, V> {
 
 #[cfg(test)]
 mod test {
-  use super::BinarySearchTree;
+  use super::AvlTree;
   use super::Node;
 
   #[test]
   fn new() {
-    let bst: BinarySearchTree<i32, i32> = BinarySearchTree::new();
+    let bst: AvlTree<i32, i32> = AvlTree::new();
     assert!(bst.is_empty());
     assert_eq!(bst.len(), 0);
   }
@@ -363,7 +363,7 @@ mod test {
   #[test]
   fn new_root() {
     let root = Node::new("key", "value");
-    let bst = BinarySearchTree::new_root(root);
+    let bst = AvlTree::new_root(root);
     assert!(!bst.is_empty());
     assert!(bst.root.is_some());
     assert_eq!(bst.len(), 1);
@@ -371,7 +371,7 @@ mod test {
 
   #[test]
   fn get() {
-    let bst = BinarySearchTree::new_root(Node::new(2, 2));
+    let bst = AvlTree::new_root(Node::new(2, 2));
     let found = bst.get(&0);
     assert!(found.is_none());
     let found = bst.get(&2).unwrap();
@@ -381,7 +381,7 @@ mod test {
 
   #[test]
   fn get_mut() {
-    let mut bst = BinarySearchTree::new_root(Node::new(2, 2));
+    let mut bst = AvlTree::new_root(Node::new(2, 2));
     let found = bst.get_mut(&2).unwrap();
     assert_eq!(found.key, 2);
     assert_eq!(found.value, 2);
@@ -394,14 +394,14 @@ mod test {
 
   #[test]
   fn contains() {
-    let bst = BinarySearchTree::new_root(Node::new(5, 2));
+    let bst = AvlTree::new_root(Node::new(5, 2));
     assert!(bst.contains(&5));
     assert!(!bst.contains(&10));
   }
 
   #[test]
   fn insert() {
-    let mut bst = BinarySearchTree::new();
+    let mut bst = AvlTree::new();
     assert!(bst.insert(2, 2));
     assert!(bst.insert(3, 3));
     assert!(bst.insert(2, 2));
@@ -433,7 +433,7 @@ mod test {
 
   #[test]
   fn smallest() {
-    let mut bst = BinarySearchTree::new();
+    let mut bst = AvlTree::new();
     bst.insert(5, "five");
     bst.insert(2, "two");
     bst.insert(1, "one");
@@ -448,7 +448,7 @@ mod test {
 
   #[test]
   fn successor() {
-    let mut bst = BinarySearchTree::new();
+    let mut bst = AvlTree::new();
     bst.insert(5, "five");
     bst.insert(2, "two");
     bst.insert(1, "one");
@@ -474,9 +474,9 @@ mod test {
     assert!(bst.successor(&8).is_none());
   }
 
-  fn iter_test_setup() -> BinarySearchTree<i32, i32> {
+  fn iter_test_setup() -> AvlTree<i32, i32> {
     let insertion_order = Vec::from([6, 3, 8, 1, 2, 9, 5, 4, 7, 10]);
-    let mut bst = BinarySearchTree::new();
+    let mut bst = AvlTree::new();
     for key in insertion_order {
       bst.insert(key, key);
     }
