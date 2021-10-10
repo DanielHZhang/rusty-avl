@@ -147,24 +147,24 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
   pub fn rebalance(&mut self) -> bool {
     match self.balance_factor() {
       BalanceFactor::RightHeavy(2) => match self.right.as_deref_mut() {
-        None => false,
-        Some(right_child) => {
-          // Check if right child of root is left heavy
+				Some(right_child) => {
+					// Check if right child of root is left heavy
           if let BalanceFactor::LeftHeavy(1) = right_child.balance_factor() {
-            right_child.rotate_right();
+						right_child.rotate_right();
           }
           self.rotate_left()
-        }
+        },
+				None => false,
       },
       BalanceFactor::LeftHeavy(2) => match self.left.as_deref_mut() {
-        None => false,
-        Some(left_child) => {
-          // Check if left child of root is right heavy
+				Some(left_child) => {
+					// Check if left child of root is right heavy
           if let BalanceFactor::RightHeavy(1) = left_child.balance_factor() {
-            left_child.rotate_left();
+						left_child.rotate_left();
           }
           self.rotate_right()
-        }
+        },
+				None => false,
       },
       _ => false, // No rebalancing required
     }

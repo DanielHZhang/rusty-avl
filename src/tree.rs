@@ -21,7 +21,7 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
 
 // TODO: implement FromIterator for AvlTree
 
-impl<K: Ord, V: PartialEq> AvlTree<K, V> {
+impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   /// Constructs a new AVL tree with an empty root.
   pub fn new(root: Node<K, V>) -> Self {
     Self {
@@ -245,6 +245,7 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
               Ordering::Equal => match node.right.as_deref() {
                 None => {
                   // Trace backwards through visited parents, until encountering successor
+                  println!("Goes here for: {:?}", key);
                   for parent in visited.into_iter().rev() {
                     if parent.key > *key {
                       return Some(parent);
@@ -252,7 +253,10 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
                   }
                   return None;
                 }
-                Some(right) => return right.smallest(),
+                Some(right) => match right.smallest() {
+                  Some(node) => return Some(node),
+                  None => return Some(right),
+                },
               },
             },
           }
@@ -299,11 +303,14 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
 
   /// Height is considered the node count, not the edge count
   pub fn height(&self) -> usize {
-    match self.root.as_deref() {
-      None => 0,
-      Some(root) => {
+    self
+      .root
+      .as_deref()
+      .map(|root| {
         let mut height = 0;
-        let mut queue: VecDeque<&Node<K, V>> = Vec::from([root]).into_iter().collect();
+        let mut queue = Vec::from([root])
+          .into_iter()
+          .collect::<VecDeque<&Node<K, V>>>();
         while !queue.is_empty() {
           let mut size = queue.len();
           while size > 0 {
@@ -319,8 +326,8 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
           height += 1;
         }
         height
-      }
-    }
+      })
+      .unwrap_or(0)
   }
 
   /// Returns an iterator that performs a pre-order traversal of the tree
@@ -457,30 +464,33 @@ mod test {
 
   #[test]
   fn successor() {
-    let mut bst = AvlTree::default();
-    bst.insert(5, "five");
-    bst.insert(2, "two");
-    bst.insert(1, "one");
-    bst.insert(3, "three");
-    bst.insert(4, "four");
-    bst.insert(7, "seven");
-    bst.insert(6, "six");
-    bst.insert(8, "eight");
-    let mut suc = bst.successor(&1).expect("Sucessor of key 1 was not found");
+    let mut avl = AvlTree::default();
+    avl.insert(5, "five");
+    avl.insert(2, "two");
+    avl.insert(1, "one");
+    avl.insert(3, "three");
+    avl.insert(4, "four");
+    avl.insert(7, "seven");
+    avl.insert(6, "six");
+    avl.insert(8, "eight");
+
+    // println!("{:#?}", avl.iter_inorder().collect::<Vec<_>>());
+    println!("{:#?}", avl.root.as_ref().unwrap());
+    let mut suc = avl.successor(&1).unwrap();
     assert_eq!(suc.key, 2);
-    suc = bst.successor(&2).expect("Successor of key 2 was not found");
+    suc = avl.successor(&2).unwrap();
     assert_eq!(suc.key, 3);
-    suc = bst.successor(&3).expect("Successor of key 3 was not found");
+    suc = avl.successor(&3).unwrap();
     assert_eq!(suc.key, 4);
-    suc = bst.successor(&4).expect("Successor of key 4 was not found");
+    suc = avl.successor(&4).unwrap();
     assert_eq!(suc.key, 5);
-    suc = bst.successor(&5).expect("Successor of key 5 way not found");
+    suc = avl.successor(&5).unwrap();
     assert_eq!(suc.key, 6);
-    suc = bst.successor(&6).expect("Successor of key 6 way not found");
+    suc = avl.successor(&6).unwrap();
     assert_eq!(suc.key, 7);
-    suc = bst.successor(&7).expect("Successor of key 7 way not found");
+    suc = avl.successor(&7).unwrap();
     assert_eq!(suc.key, 8);
-    assert!(bst.successor(&8).is_none());
+    assert!(avl.successor(&8).is_none());
   }
 
   fn iter_test_setup() -> AvlTree<i32, i32> {
