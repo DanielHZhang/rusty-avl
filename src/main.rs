@@ -1,6 +1,6 @@
 mod tree;
 
-use tree::tree::AvlTree;
+use tree::AvlTree;
 
 fn main() {
   let mut tree = AvlTree::new();
