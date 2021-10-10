@@ -100,9 +100,20 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
     self.get(&key).is_some()
   }
 
-  pub fn smallest(&mut self) -> Option<&mut Node<K, V>> {
-    let a = self.root.as_mut().unwrap().smallest_mut();
-    a
+  pub fn smallest(&self) -> Option<&Node<K, V>> {
+    self
+      .root
+      .as_ref()
+      .map(|root| root.smallest())
+      .unwrap_or(None)
+  }
+
+  pub fn smallest_mut(&mut self) -> Option<&mut Node<K, V>> {
+    self
+      .root
+      .as_mut()
+      .map(|root| root.smallest_mut())
+      .unwrap_or(None)
   }
 
   pub fn largest(&mut self) -> Option<&mut Node<K, V>> {
