@@ -1,12 +1,12 @@
 use super::{
   iter::{NodeIterInorder, NodeIterPostorder, NodeIterPreorder},
-  node::{Node, NodeOption, Tree},
+  node::{Branch, Node, NodeOption},
 };
 use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
 
 #[derive(Debug)]
 pub struct AvlTree<K: Ord, V: PartialEq> {
-  root: Tree<K, V>,
+  root: Branch<K, V>,
   size: usize,
   avl: bool,
 }

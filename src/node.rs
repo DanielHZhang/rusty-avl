@@ -1,6 +1,6 @@
 use std::{cmp::max, fmt::Debug, mem, usize};
 
-pub type Tree<K, V> = Option<Box<Node<K, V>>>;
+pub type Branch<K, V> = Option<Box<Node<K, V>>>;
 
 enum BF {
   Balanced,
@@ -14,8 +14,8 @@ pub struct Node<K: Ord, V: PartialEq> {
   pub key: K,
   pub value: V,
   pub count: u32,
-  pub left: Tree<K, V>,
-  pub right: Tree<K, V>,
+  pub left: Branch<K, V>,
+  pub right: Branch<K, V>,
 }
 
 impl<K: Ord, V: PartialEq> Node<K, V> {
@@ -198,7 +198,7 @@ impl<K: Ord, V: PartialEq> NodeOption<K, V> for Option<Box<Node<K, V>>> {
 #[cfg(test)]
 mod test {
   use super::Node;
-  use crate::tree::iter::{NodeIterPostorder, NodeIterPreorder};
+  use crate::iter::{NodeIterInorder, NodeIterPostorder, NodeIterPreorder};
 
   #[test]
   fn rotate_right() {

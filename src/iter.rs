@@ -1,4 +1,4 @@
-use super::node::Node;
+use super::Node;
 
 pub struct NodeIterPreorder<'a, K: Ord, V: PartialEq> {
   stack: Vec<&'a Node<K, V>>,
