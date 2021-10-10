@@ -8,7 +8,6 @@ use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
 pub struct AvlTree<K: Ord, V: PartialEq> {
   root: Branch<K, V>,
   size: usize,
-  avl: bool,
 }
 
 impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
@@ -16,7 +15,6 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
     Self {
       root: None,
       size: 0,
-      avl: false,
     }
   }
 }
@@ -24,29 +22,10 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
 // TODO: implement FromIterator for AvlTree
 
 impl<K: Ord, V: PartialEq> AvlTree<K, V> {
-  pub fn new() -> Self {
-    AvlTree::default()
-  }
-
-  pub fn new_root(root: Node<K, V>) -> Self {
+  pub fn new(root: Node<K, V>) -> Self {
     Self {
       root: Some(Box::new(root)),
       size: 1,
-      avl: false,
-    }
-  }
-
-  pub fn new_avl() -> Self {
-    Self {
-      avl: true,
-      ..AvlTree::default()
-    }
-  }
-
-  pub fn new_avl_root(root: Node<K, V>) -> Self {
-    Self {
-      avl: true,
-      ..AvlTree::new_root(root)
     }
   }
 
@@ -227,18 +206,16 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
     // Perform insertion
     *cur = Some(Box::new(Node::new(key, value)));
     self.size += 1;
-    if self.avl {
-      // Trace backwards through visited parents, updating their heights
-      for parent in visited.into_iter().rev() {
-        let node = unsafe { &mut *parent }; // Unsafe deferencing of raw pointer
-        node.update_height();
-        node.rebalance();
-      }
+    // Trace backwards through visited parents, updating their heights
+    for parent in visited.into_iter().rev() {
+      let node = unsafe { &mut *parent }; // Unsafe deferencing of raw pointer
+      node.update_height();
+      node.rebalance();
     }
     true
   }
 
-  pub fn delete(&mut self, key: &K) -> Option<Node<K, V>> {
+  pub fn remove(&mut self, key: &K) -> Option<Node<K, V>> {
     let mut visited: Vec<*mut Node<K, V>> = Vec::new();
     let mut cur = &mut self.root;
     while let Some(node) = cur.as_deref() {
@@ -278,12 +255,10 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       }
     }
 
-    if self.avl {
-      for parent in visited.into_iter().rev() {
-        let node = unsafe { &mut *parent };
-        node.update_height();
-        node.rebalance();
-      }
+    for parent in visited.into_iter().rev() {
+      let node = unsafe { &mut *parent };
+      node.update_height();
+      node.rebalance();
     }
     //   if node.count > 1 {
     //     node.count -= 1; // Decrement node count if there are duplicates
@@ -363,53 +338,50 @@ mod test {
 
   #[test]
   fn new() {
-    let bst: AvlTree<i32, i32> = AvlTree::new();
-    assert!(bst.is_empty());
-    assert_eq!(bst.len(), 0);
-  }
+    let avl: AvlTree<i32, i32> = AvlTree::default();
+    assert!(avl.root.is_some());
+    assert!(!avl.is_empty());
+    assert_eq!(avl.len(), 0);
 
-  #[test]
-  fn new_root() {
-    let root = Node::new("key", "value");
-    let bst = AvlTree::new_root(root);
-    assert!(!bst.is_empty());
-    assert!(bst.root.is_some());
-    assert_eq!(bst.len(), 1);
+    let avl = AvlTree::new(Node::new("key", "value"));
+    assert!(avl.root.is_some());
+    assert!(!avl.is_empty());
+    assert_eq!(avl.len(), 1);
   }
 
   #[test]
   fn get() {
-    let bst = AvlTree::new_root(Node::new(2, 2));
-    let found = bst.get(&0);
+    let avl = AvlTree::new(Node::new(2, 2));
+    let found = avl.get(&0);
     assert!(found.is_none());
-    let found = bst.get(&2).unwrap();
+    let found = avl.get(&2).unwrap();
     assert_eq!(found.key, 2);
     assert_eq!(found.value, 2);
   }
 
   #[test]
   fn get_mut() {
-    let mut bst = AvlTree::new_root(Node::new(2, 2));
-    let found = bst.get_mut(&2).unwrap();
+    let mut avl = AvlTree::new(Node::new(2, 2));
+    let found = avl.get_mut(&2).unwrap();
     assert_eq!(found.key, 2);
     assert_eq!(found.value, 2);
     found.key = 5;
     found.value = 10;
-    let found = bst.get_mut(&5).unwrap();
+    let found = avl.get_mut(&5).unwrap();
     assert_eq!(found.key, 5);
     assert_eq!(found.value, 10);
   }
 
   #[test]
   fn contains() {
-    let bst = AvlTree::new_root(Node::new(5, 2));
-    assert!(bst.contains(&5));
-    assert!(!bst.contains(&10));
+    let avl = AvlTree::new(Node::new(5, 2));
+    assert!(avl.contains(&5));
+    assert!(!avl.contains(&10));
   }
 
   #[test]
   fn insert() {
-    let mut bst = AvlTree::new();
+    let mut bst = AvlTree::default();
     assert!(bst.insert(2, 2));
     assert!(bst.insert(3, 3));
     assert!(bst.insert(2, 2));
@@ -418,7 +390,7 @@ mod test {
   }
 
   #[test]
-  fn delete() {
+  fn remove() {
     // let mut bst = BinarySearchTree::new();
     // bst.insert(8, "eight");
     // bst.insert(2, "two");
@@ -441,7 +413,7 @@ mod test {
 
   #[test]
   fn smallest() {
-    let mut avl = AvlTree::new();
+    let mut avl = AvlTree::default();
     avl.insert(5, "five");
     avl.insert(2, "two");
     avl.insert(1, "one");
@@ -455,7 +427,7 @@ mod test {
 
   #[test]
   fn largest() {
-    let mut avl = AvlTree::new();
+    let mut avl = AvlTree::default();
     avl.insert(5, "five");
     avl.insert(10, "ten");
     avl.insert(16, "sixteen");
@@ -469,7 +441,7 @@ mod test {
 
   #[test]
   fn successor() {
-    let mut bst = AvlTree::new();
+    let mut bst = AvlTree::default();
     bst.insert(5, "five");
     bst.insert(2, "two");
     bst.insert(1, "one");
@@ -497,7 +469,7 @@ mod test {
 
   fn iter_test_setup() -> AvlTree<i32, i32> {
     let insertion_order = Vec::from([6, 3, 8, 1, 2, 9, 5, 4, 7, 10]);
-    let mut bst = AvlTree::new();
+    let mut bst = AvlTree::default();
     for key in insertion_order {
       bst.insert(key, key);
     }
