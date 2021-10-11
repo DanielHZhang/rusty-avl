@@ -226,43 +226,36 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   }
 
   pub fn successor(&mut self, key: &K) -> Option<&Node<K, V>> {
-    match self.root.as_deref() {
-      None => None,
-      Some(root) => {
+    self
+      .root
+      .as_deref()
+      .map(|root| {
         let mut visited = Vec::from([root]);
-        loop {
-          match visited.last() {
-            None => return None,
-            Some(node) => match key.cmp(&node.key) {
-              Ordering::Less => match node.left.as_deref() {
-                None => return None,
-                Some(left) => visited.push(left),
-              },
-              Ordering::Greater => match node.right.as_deref() {
-                None => return None,
-                Some(right) => visited.push(right),
-              },
-              Ordering::Equal => match node.right.as_deref() {
-                None => {
-                  // Trace backwards through visited parents, until encountering successor
-                  println!("Goes here for: {:?}", key);
-                  for parent in visited.into_iter().rev() {
-                    if parent.key > *key {
-                      return Some(parent);
-                    }
-                  }
-                  return None;
-                }
-                Some(right) => match right.smallest() {
-                  Some(node) => return Some(node),
-                  None => return Some(right),
-                },
-              },
+        while let Some(node) = visited.last() {
+          match key.cmp(&node.key) {
+            Ordering::Less => match node.left.as_deref() {
+              Some(left) => visited.push(left),
+              None => break,
             },
-          }
+            Ordering::Greater => match node.right.as_deref() {
+              Some(right) => visited.push(right),
+              None => break,
+            },
+            Ordering::Equal => match node.right.as_deref() {
+              Some(right) => match right.smallest() {
+                Some(node) => return Some(node),
+                None => return Some(right),
+              },
+              None => {
+                // Trace backwards through visited parents, until encountering successor
+                return visited.into_iter().rev().find(|parent| &parent.key > key);
+              }
+            },
+          };
         }
-      }
-    }
+        None
+      })
+      .unwrap_or(None)
   }
 
   pub fn predecessor(&mut self, key: &K) -> Option<&Node<K, V>> {
