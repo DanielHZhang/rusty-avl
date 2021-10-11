@@ -130,9 +130,10 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
     None
   }
 
-  pub fn remove(&mut self, key: &K) -> Option<Node<K, V>> {
-    let mut visited: Vec<*mut Node<K, V>> = Vec::new();
+  pub fn remove(&mut self, key: &K) -> Option<V> {
+    let mut visited: Vec<*mut Node<K, V>> = Vec::new(); // Store raw mut pointers
     let mut cur = &mut self.root;
+
     while let Some(node) = cur.as_deref() {
       match key.cmp(&node.key) {
         Ordering::Less => {
@@ -150,13 +151,12 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
         }
       }
     }
+
     if cur.is_none() {
       return None;
     }
+
     let node = cur.as_mut().unwrap();
-    // if node.count > 1 {
-    //   node.count -= 1;
-    // } else {
     match (node.left.as_mut(), node.right.as_mut()) {
       (None, None) => *cur = None,
       (Some(_), None) => *cur = node.left.take(),
@@ -185,11 +185,7 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
     //     }
     //   }
     //   self.size -= 1;
-    //   if self.avl {
-    //     //
-    //   }
     //   return true;
-    // break;
     None
   }
 
@@ -295,6 +291,7 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
         let mut queue = Vec::from([root])
           .into_iter()
           .collect::<VecDeque<&Node<K, V>>>();
+
         while !queue.is_empty() {
           let mut size = queue.len();
           while size > 0 {
@@ -350,25 +347,18 @@ mod test {
 
   #[test]
   fn get() {
-    let avl = AvlTree::new(Node::new(2, 2));
-    let found = avl.get(&0);
-    assert!(found.is_none());
+    let mut avl = AvlTree::new(Node::new(2, 2));
+    avl.insert(4, 4);
+
+    assert!(avl.get(&0).is_none()); // Non-existent keys should return None
+
     let found = avl.get(&2).unwrap();
     assert_eq!(found.key, 2);
     assert_eq!(found.value, 2);
-  }
 
-  #[test]
-  fn get_mut() {
-    let mut avl = AvlTree::new(Node::new(2, 2));
-    let found = avl.get_mut(&2).unwrap();
-    assert_eq!(found.key, 2);
-    assert_eq!(found.value, 2);
-    found.key = 5;
-    found.value = 10;
-    let found = avl.get_mut(&5).unwrap();
-    assert_eq!(found.key, 5);
-    assert_eq!(found.value, 10);
+    let found = avl.get_mut(&4).unwrap();
+    assert_eq!(found.key, 4);
+    assert_eq!(found.value, 4);
   }
 
   #[test]
@@ -392,20 +382,18 @@ mod test {
     assert_eq!(avl.len(), 4);
 
     // Inserting existing keys should return previous value
-    assert_eq!(avl.insert(2, 9).unwrap(), 4);
-    assert_eq!(avl.insert(4, 5).unwrap(), 8);
+    assert_eq!(avl.insert(2, 9), Some(4));
+    assert_eq!(avl.insert(4, 5), Some(8));
   }
 
   #[test]
   fn remove() {
-    // let mut bst = BinarySearchTree::new();
-    // bst.insert(8, "eight");
-    // bst.insert(2, "two");
-    // bst.insert(5, "five");
-    // bst.insert(1, "one");
-    // bst.insert(10, "ten");
-    // bst.insert(9, "nine");
-    // assert!(bst.delete(2));
+    let mut avl = AvlTree::default();
+    for key in [8, 2, 5, 1, 10, 9] {
+      avl.insert(key, key);
+    }
+
+    assert_eq!(avl.remove(&2), Some(2));
     // assert!(!bst.delete(2));
     // assert!(bst.delete(10));
     // assert_eq!(bst.len(), 4);
