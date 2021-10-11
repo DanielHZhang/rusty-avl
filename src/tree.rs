@@ -242,10 +242,7 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
               None => break,
             },
             Ordering::Equal => match node.right.as_deref() {
-              Some(right) => match right.smallest() {
-                Some(node) => return Some(node),
-                None => return Some(right),
-              },
+              Some(right) => return right.smallest().or(Some(right)),
               None => {
                 // Trace backwards through visited parents, until encountering successor
                 return visited.into_iter().rev().find(|parent| &parent.key > key);
@@ -259,42 +256,36 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   }
 
   pub fn predecessor(&mut self, key: &K) -> Option<&Node<K, V>> {
-    match self.root.as_deref() {
-      None => None,
-      Some(root) => {
+    self
+      .root
+      .as_deref()
+      .map(|root| {
         let mut visited = Vec::from([root]);
-        loop {
-          match visited.last() {
-            None => return None,
-            Some(node) => match key.cmp(&node.key) {
-              Ordering::Less => match node.left.as_deref() {
-                None => return None,
-                Some(node) => visited.push(node),
-              },
-              Ordering::Greater => match node.right.as_deref() {
-                None => return None,
-                Some(node) => visited.push(node),
-              },
-              Ordering::Equal => match node.left.as_deref() {
-                None => {
-                  // Trace backwards through visited parents, until encounting predecessor
-                  for parent in visited.into_iter().rev() {
-                    if parent.key < *key {
-                      return Some(parent);
-                    }
-                  }
-                  return None;
-                }
-                Some(left) => return left.largest(),
-              },
+        while let Some(node) = visited.last() {
+          match key.cmp(&node.key) {
+            Ordering::Less => match node.left.as_deref() {
+              Some(node) => visited.push(node),
+              None => break,
+            },
+            Ordering::Greater => match node.right.as_deref() {
+              Some(node) => visited.push(node),
+              None => break,
+            },
+            Ordering::Equal => match node.left.as_deref() {
+              Some(left) => return left.largest().or(Some(left)),
+              None => {
+                // Trace backwards through visited parents, until encounting predecessor
+                return visited.into_iter().rev().find(|parent| &parent.key < key);
+              }
             },
           }
         }
-      }
-    }
+        None
+      })
+      .unwrap_or(None)
   }
 
-  /// Height is considered the node count, not the edge count
+  /// Returns the maximum node count (not edge count) from the root node to a leaf node.
   pub fn height(&self) -> usize {
     self
       .root
