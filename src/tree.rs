@@ -2,7 +2,7 @@ use super::{
   iter::{NodeIterInorder, NodeIterPostorder, NodeIterPreorder},
   node::{Branch, Node, NodeOption},
 };
-use std::{cmp::Ordering, collections::VecDeque, error::Error, fmt::Debug};
+use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
 
 #[derive(Debug)]
 pub struct AvlTree<K: Ord, V: PartialEq> {
@@ -455,8 +455,7 @@ mod test {
     assert_eq!(largest.unwrap().key, 16);
   }
 
-  #[test]
-  fn successor() {
+  fn setup_tree<'a>() -> AvlTree<i32, &'a str> {
     let mut avl = AvlTree::default();
     avl.insert(5, "five");
     avl.insert(2, "two");
@@ -466,24 +465,28 @@ mod test {
     avl.insert(7, "seven");
     avl.insert(6, "six");
     avl.insert(8, "eight");
+    return avl;
+  }
 
-    // println!("{:#?}", avl.iter_inorder().collect::<Vec<_>>());
-    println!("{:#?}", avl.root.as_ref().unwrap());
-    let mut suc = avl.successor(&1).unwrap();
-    assert_eq!(suc.key, 2);
-    suc = avl.successor(&2).unwrap();
-    assert_eq!(suc.key, 3);
-    suc = avl.successor(&3).unwrap();
-    assert_eq!(suc.key, 4);
-    suc = avl.successor(&4).unwrap();
-    assert_eq!(suc.key, 5);
-    suc = avl.successor(&5).unwrap();
-    assert_eq!(suc.key, 6);
-    suc = avl.successor(&6).unwrap();
-    assert_eq!(suc.key, 7);
-    suc = avl.successor(&7).unwrap();
-    assert_eq!(suc.key, 8);
+  #[test]
+  fn successor() {
+    let mut avl = setup_tree();
+    let mut key = 1;
+    let expected = [2, 3, 4, 5, 6, 7, 8];
+    for expected_key in expected.iter() {
+      let suc = avl.successor(&key).unwrap();
+      assert_eq!(&suc.key, expected_key);
+      key = suc.key;
+    }
     assert!(avl.successor(&8).is_none());
+  }
+
+  #[test]
+  fn predecessor() {
+    let mut avl = setup_tree();
+    let mut pre = avl.predecessor(&8).unwrap();
+    // assert_eq!(suc.key, 7);
+    // pre = avl.predecessor(&7)
   }
 
   fn iter_test_setup() -> AvlTree<i32, i32> {
