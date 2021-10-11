@@ -1,34 +1,34 @@
 use super::Node;
 
-pub struct NodeIterPreorder<'a, K: Ord, V: PartialEq> {
+pub struct IterPreorder<'a, K: Ord, V: PartialEq> {
   stack: Vec<&'a Node<K, V>>,
 }
 
-impl<'a, K: Ord, V: PartialEq> NodeIterPreorder<'a, K, V> {
+impl<K: Ord, V: PartialEq> Default for IterPreorder<'_, K, V> {
+  fn default() -> Self {
+    IterPreorder { stack: Vec::new() }
+  }
+}
+
+impl<'a, K: Ord, V: PartialEq> IterPreorder<'a, K, V> {
   pub fn new(root: Option<&'a Node<K, V>>) -> Self {
     match root {
-      None => NodeIterPreorder::default(),
-      Some(node) => NodeIterPreorder {
+      Some(node) => IterPreorder {
         stack: Vec::from([node]),
       },
+      None => Self::default(),
     }
   }
 }
 
-impl<K: Ord, V: PartialEq> Default for NodeIterPreorder<'_, K, V> {
-  fn default() -> Self {
-    NodeIterPreorder { stack: Vec::new() }
-  }
-}
-
-impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterPreorder<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> Iterator for IterPreorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    let top = self.stack.pop();
-    match top {
-      None => None,
-      Some(node) => {
+    self
+      .stack
+      .pop()
+      .map(|node| {
         if let Some(right) = node.right.as_deref() {
           self.stack.push(right);
         }
@@ -36,37 +36,39 @@ impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterPreorder<'a, K, V> {
           self.stack.push(left);
         }
         Some(node)
-      }
-    }
+      })
+      .unwrap_or(None)
   }
 }
 
-pub struct NodeIterInorder<'a, K: Ord, V: PartialEq> {
+pub struct IterInorder<'a, K: Ord, V: PartialEq> {
   stack: Vec<&'a Node<K, V>>,
   current: Option<&'a Node<K, V>>,
 }
 
-impl<'a, K: Ord, V: PartialEq> NodeIterInorder<'a, K, V> {
+impl<K: Ord, V: PartialEq> Default for IterInorder<'_, K, V> {
+  fn default() -> Self {
+    IterInorder {
+      stack: Vec::new(),
+      current: None,
+    }
+  }
+}
+
+impl<'a, K: Ord, V: PartialEq> IterInorder<'a, K, V> {
   pub fn new(root: Option<&'a Node<K, V>>) -> Self {
-    NodeIterInorder {
+    IterInorder {
       stack: Vec::new(),
       current: root,
     }
   }
 }
 
-impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterInorder<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> Iterator for IterInorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {
     match self.current {
-      None => match self.stack.pop() {
-        None => None,
-        Some(node) => {
-          self.current = node.right.as_deref();
-          Some(node)
-        }
-      },
       Some(mut cur) => loop {
         match cur.left.as_deref() {
           None => {
@@ -79,22 +81,36 @@ impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterInorder<'a, K, V> {
           }
         }
       },
+      None => self
+        .stack
+        .pop()
+        .map(|node| {
+          self.current = node.right.as_deref();
+          Some(node)
+        })
+        .unwrap_or(None),
     }
   }
 }
 
-pub struct NodeIterPostorder<'a, K: Ord, V: PartialEq> {
+pub struct IterPostorder<'a, K: Ord, V: PartialEq> {
   stack: Vec<&'a Node<K, V>>,
   current: Option<&'a Node<K, V>>,
 }
 
-impl<'a, K: Ord, V: PartialEq> NodeIterPostorder<'a, K, V> {
+impl<K: Ord, V: PartialEq> Default for IterPostorder<'_, K, V> {
+  fn default() -> Self {
+    IterPostorder {
+      stack: Vec::new(),
+      current: None,
+    }
+  }
+}
+
+impl<'a, K: Ord, V: PartialEq> IterPostorder<'a, K, V> {
   pub fn new(root: Option<&'a Node<K, V>>) -> Self {
     match root {
-      None => Self {
-        stack: Vec::new(),
-        current: None,
-      },
+      None => Self::default(),
       Some(node) => Self {
         stack: Vec::from([node]),
         current: root,
@@ -103,19 +119,19 @@ impl<'a, K: Ord, V: PartialEq> NodeIterPostorder<'a, K, V> {
   }
 }
 
-impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterPostorder<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> Iterator for IterPostorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    match self.current {
-      None => None,
-      Some(cur) => {
+    self
+      .current
+      .map(|node| {
         while let Some(top) = self.stack.pop() {
           let finished_subtrees = match (top.right.as_deref(), top.left.as_deref()) {
             (None, None) => false,
-            (None, Some(left)) => left.key == cur.key,
-            (Some(right), None) => right.key == cur.key,
-            (Some(right), Some(left)) => right.key == cur.key || left.key == cur.key,
+            (None, Some(left)) => left.key == node.key,
+            (Some(right), None) => right.key == node.key,
+            (Some(right), Some(left)) => right.key == node.key || left.key == node.key,
           };
           if finished_subtrees || top.is_leaf() {
             self.current = Some(top);
@@ -131,7 +147,7 @@ impl<'a, K: Ord, V: PartialEq> Iterator for NodeIterPostorder<'a, K, V> {
           }
         }
         None
-      }
-    }
+      })
+      .unwrap_or(None)
   }
 }

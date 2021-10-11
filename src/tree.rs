@@ -1,5 +1,5 @@
 use super::{
-  iter::{NodeIterInorder, NodeIterPostorder, NodeIterPreorder},
+  iter::{IterInorder, IterPostorder, IterPreorder},
   node::{Branch, Node, NodeOption},
 };
 use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
@@ -315,18 +315,18 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   }
 
   /// Returns an iterator that performs a pre-order traversal of the tree
-  pub fn iter_preorder(&self) -> NodeIterPreorder<K, V> {
-    NodeIterPreorder::new(self.root.as_deref())
+  pub fn iter_preorder(&self) -> IterPreorder<K, V> {
+    IterPreorder::new(self.root.as_deref())
   }
 
   /// Returns an iterator that performs an in-order traversal of the tree
-  pub fn iter_inorder(&self) -> NodeIterInorder<K, V> {
-    NodeIterInorder::new(self.root.as_deref())
+  pub fn iter_inorder(&self) -> IterInorder<K, V> {
+    IterInorder::new(self.root.as_deref())
   }
 
   /// Returns an iterator that performs a post-order traversal of the tree
-  pub fn iter_postorder(&self) -> NodeIterPostorder<K, V> {
-    NodeIterPostorder::new(self.root.as_deref())
+  pub fn iter_postorder(&self) -> IterPostorder<K, V> {
+    IterPostorder::new(self.root.as_deref())
   }
 }
 

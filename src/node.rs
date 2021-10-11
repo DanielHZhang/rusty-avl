@@ -207,7 +207,7 @@ impl<K: Ord, V: PartialEq> NodeOption<K, V> for Option<Box<Node<K, V>>> {
 #[cfg(test)]
 mod test {
   use super::Node;
-  use crate::iter::{NodeIterPostorder, NodeIterPreorder};
+  use crate::iter::{IterPostorder, IterPreorder};
 
   #[test]
   fn rotate_right() {
@@ -219,11 +219,11 @@ mod test {
     );
     assert!(root.rotate_right());
     let expected_preorder = Vec::from([2, 1, 4, 3, 5]);
-    for (index, node) in NodeIterPreorder::new(Some(&root)).enumerate() {
+    for (index, node) in IterPreorder::new(Some(&root)).enumerate() {
       assert_eq!(node.key, expected_preorder[index]);
     }
     let expected_postorder = Vec::from([1, 3, 5, 4, 2]);
-    for (index, node) in NodeIterPostorder::new(Some(&root)).enumerate() {
+    for (index, node) in IterPostorder::new(Some(&root)).enumerate() {
       assert_eq!(node.key, expected_postorder[index]);
     }
   }
@@ -238,11 +238,11 @@ mod test {
     );
     assert!(root.rotate_left());
     let expected_preorder = Vec::from([4, 2, 1, 3, 5]);
-    for (index, node) in NodeIterPreorder::new(Some(&root)).enumerate() {
+    for (index, node) in IterPreorder::new(Some(&root)).enumerate() {
       assert_eq!(node.key, expected_preorder[index]);
     }
     let expected_postorder = Vec::from([1, 3, 2, 5, 4]);
-    for (index, node) in NodeIterPostorder::new(Some(&root)).enumerate() {
+    for (index, node) in IterPostorder::new(Some(&root)).enumerate() {
       assert_eq!(node.key, expected_postorder[index]);
     }
   }
