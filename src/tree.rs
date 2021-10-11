@@ -455,27 +455,23 @@ mod test {
     assert_eq!(largest.unwrap().key, 16);
   }
 
-  fn setup_tree<'a>() -> AvlTree<i32, &'a str> {
+  fn avl_cessor_setup<'a>() -> AvlTree<i32, i32> {
     let mut avl = AvlTree::default();
-    avl.insert(5, "five");
-    avl.insert(2, "two");
-    avl.insert(1, "one");
-    avl.insert(3, "three");
-    avl.insert(4, "four");
-    avl.insert(7, "seven");
-    avl.insert(6, "six");
-    avl.insert(8, "eight");
-    return avl;
+    for key in [5, 2, 1, 3, 4, 7, 6, 8] {
+      avl.insert(key, key);
+    }
+    avl
   }
 
   #[test]
   fn successor() {
-    let mut avl = setup_tree();
+    let mut avl = avl_cessor_setup();
     let mut key = 1;
-    let expected = [2, 3, 4, 5, 6, 7, 8];
-    for expected_key in expected.iter() {
-      let suc = avl.successor(&key).unwrap();
-      assert_eq!(&suc.key, expected_key);
+    for expected in [2, 3, 4, 5, 6, 7, 8] {
+      let suc = avl
+        .successor(&key)
+        .unwrap_or_else(|| panic!("Missing successor of {}", key));
+      assert_eq!(suc.key, expected);
       key = suc.key;
     }
     assert!(avl.successor(&8).is_none());
@@ -483,24 +479,29 @@ mod test {
 
   #[test]
   fn predecessor() {
-    let mut avl = setup_tree();
-    let mut pre = avl.predecessor(&8).unwrap();
-    // assert_eq!(suc.key, 7);
-    // pre = avl.predecessor(&7)
+    let mut avl = avl_cessor_setup();
+    let mut key = 8;
+    for expected in [7, 6, 5, 4, 3, 2, 1] {
+      let pre = avl
+        .predecessor(&key)
+        .unwrap_or_else(|| panic!("Missing predecessor of {}", key));
+      assert_eq!(pre.key, expected);
+      key = pre.key;
+    }
+    assert!(avl.predecessor(&1).is_none());
   }
 
-  fn iter_test_setup() -> AvlTree<i32, i32> {
-    let insertion_order = Vec::from([6, 3, 8, 1, 2, 9, 5, 4, 7, 10]);
-    let mut bst = AvlTree::default();
-    for key in insertion_order {
-      bst.insert(key, key);
+  fn avl_iter_setup() -> AvlTree<i32, i32> {
+    let mut avl = AvlTree::default();
+    for key in [6, 3, 8, 1, 2, 9, 5, 4, 7, 10] {
+      avl.insert(key, key);
     }
-    bst
+    avl
   }
 
   #[test]
   fn iter_preorder() {
-    let bst = iter_test_setup();
+    let bst = avl_iter_setup();
     let expected = Vec::from([6, 3, 1, 2, 5, 4, 8, 7, 9, 10]);
     for (index, node) in bst.iter_preorder().enumerate() {
       assert_eq!(node.key, expected[index]);
@@ -509,7 +510,7 @@ mod test {
 
   #[test]
   fn iter_inorder() {
-    let bst = iter_test_setup();
+    let bst = avl_iter_setup();
     let expected: Vec<i32> = (1..=10).collect();
     for (index, node) in bst.iter_inorder().enumerate() {
       assert_eq!(node.key, expected[index]);
@@ -518,7 +519,7 @@ mod test {
 
   #[test]
   fn iter_postorder() {
-    let bst = iter_test_setup();
+    let bst = avl_iter_setup();
     let expected = Vec::from([2, 1, 4, 5, 3, 7, 10, 9, 8, 6]);
     for (index, node) in bst.iter_postorder().enumerate() {
       assert_eq!(node.key, expected[index]);
