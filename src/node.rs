@@ -171,26 +171,36 @@ impl<K: Ord, V: PartialEq> Node<K, V> {
   }
 }
 
-pub trait NodeOption<K: Ord, V: PartialEq> {
-  fn extract_min(&mut self) -> Self;
-  fn extract_max(&mut self) -> Self;
+pub trait Extract<K: Ord, V: PartialEq> {
+  fn extract_min(&mut self, child: Branch<K, V>) -> Self;
+  fn extract_max(&mut self, child: Branch<K, V>) -> Self;
 }
 
-impl<K: Ord, V: PartialEq> NodeOption<K, V> for Option<Box<Node<K, V>>> {
-  fn extract_min(&mut self) -> Self {
-    let mut cur = self;
-    while cur
-      .as_ref()
-      .expect("Cannot extract from None branch")
-      .left
-      .is_some()
-    {
-      cur = &mut cur.as_mut().unwrap().left;
+impl<K: Ord, V: PartialEq> Extract<K, V> for Branch<K, V> {
+  fn extract_min(&mut self, child: Branch<K, V>) -> Self {
+    let mut min = self;
+    if min.is_none() {
+      return None;
     }
-    cur.take()
+    while min.as_ref().unwrap().left.is_some() {
+      min = &mut min.as_mut().unwrap().left;
+    }
+    // Remove extracted min, replacing it with the right child or left child passed from parent
+
+    let new_child = match min.as_mut().unwrap().right.take() {
+      Some(mut node) => {
+        assert!(node.left.is_none()); // cur should equal left child if it existed
+        node.left = child; // Set the left child passed down from the parent
+        node.rebalance();
+        Some(node)
+      }
+      None => child,
+    };
+    let extracted = std::mem::replace(min, new_child);
+    extracted
   }
 
-  fn extract_max(&mut self) -> Self {
+  fn extract_max(&mut self, child: Branch<K, V>) -> Self {
     let mut cur = self;
     while cur
       .as_ref()

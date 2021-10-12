@@ -1,8 +1,8 @@
 use super::{
   iter::{IterInorder, IterPostorder, IterPreorder},
-  node::{Branch, Node, NodeOption},
+  node::{Branch, Extract, Node},
 };
-use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
+use std::{borrow::Borrow, cmp::Ordering, collections::VecDeque, fmt::Debug};
 
 #[derive(Debug)]
 pub struct AvlTree<K: Ord, V: PartialEq> {
@@ -21,7 +21,7 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
 
 // TODO: implement FromIterator for AvlTree
 
-impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
+impl<K: Ord, V: PartialEq> AvlTree<K, V> {
   /// Constructs a new AVL tree with an empty root.
   pub fn new(root: Node<K, V>) -> Self {
     Self {
@@ -52,7 +52,11 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   }
 
   /// Returns a reference to the node with the provided key.
-  pub fn get(&self, target: &K) -> Option<&Node<K, V>> {
+  pub fn get(&self, target: &K) -> Option<&Node<K, V>>
+// where
+  //   K: Borrow<Q>,
+  //   Q: PartialOrd + Eq + ?Sized,
+  {
     self
       .root
       .as_ref()
@@ -131,20 +135,20 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   }
 
   pub fn remove(&mut self, key: &K) -> Option<V> {
-    let mut visited: Vec<*mut Node<K, V>> = Vec::new(); // Store raw mut pointers
-    let mut cur = &mut self.root;
+    let mut visited = Vec::<*mut Node<K, V>>::new(); // Store raw mut pointers
+    let mut target = &mut self.root;
 
-    while let Some(node) = cur.as_deref() {
+    while let Some(node) = target.as_ref() {
       match key.cmp(&node.key) {
         Ordering::Less => {
-          let cur_node = cur.as_deref_mut().unwrap();
-          visited.push(cur_node);
-          cur = &mut cur_node.left;
+          let node = target.as_deref_mut().unwrap();
+          visited.push(node);
+          target = &mut node.left;
         }
         Ordering::Greater => {
-          let cur_node = cur.as_deref_mut().unwrap();
-          visited.push(cur_node);
-          cur = &mut cur_node.right;
+          let node = target.as_deref_mut().unwrap();
+          visited.push(node);
+          target = &mut node.right;
         }
         Ordering::Equal => {
           break;
@@ -152,41 +156,37 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
       }
     }
 
-    if cur.is_none() {
+    if target.is_none() {
       return None;
     }
+    self.size -= 1;
 
-    let node = cur.as_mut().unwrap();
+    let mut node = target.take().unwrap();
     match (node.left.as_mut(), node.right.as_mut()) {
-      (None, None) => *cur = None,
-      (Some(_), None) => *cur = node.left.take(),
-      (None, Some(_)) => *cur = node.right.take(),
+      (None, None) => *target = None,
+      (Some(_), None) => *target = node.left.take(),
+      (None, Some(_)) => *target = node.right.take(),
       (Some(_), Some(_)) => {
-        let left = node.left.take();
-        let extracted = node.right.extract_min();
-        // todo: need to call delete on the node.right after finding smallest,
-        // otherwise node.right may have a right child which gets inadvertently removed
-      } // }
-    }
+        println!("SHOULD GO HERE");
+        // let left = node.left.take();
+        let mut extracted = node.right.extract_min(None);
+
+        if let Some(ref mut root) = extracted {
+          root.left = node.left;
+          root.right = node.right;
+        }
+
+        *target = extracted;
+      }
+    };
 
     for parent in visited.into_iter().rev() {
       let node = unsafe { &mut *parent };
       node.update_height();
       node.rebalance();
     }
-    //   if node.count > 1 {
-    //     node.count -= 1; // Decrement node count if there are duplicates
-    //   } else {
-    //     match (node.left.as_mut(), node.right.as_mut()) {
-    //       (None, None) => *cur = None,
-    //       (Some(_), None) => *cur = node.left.take(),
-    //       (None, Some(_)) => *cur = node.right.take(),
-    //       (Some(_), Some(_)) => *cur = node.right.extract_min(),
-    //     }
-    //   }
-    //   self.size -= 1;
-    //   return true;
-    None
+
+    Some(node.value)
   }
 
   pub fn smallest(&self) -> Option<&Node<K, V>> {
@@ -389,21 +389,33 @@ mod test {
   #[test]
   fn remove() {
     let mut avl = AvlTree::default();
-    for key in [8, 2, 5, 1, 10, 9] {
+    for key in [5, 2, 12, 1, 3, 8, 15, 10] {
       avl.insert(key, key);
     }
 
-    assert_eq!(avl.remove(&2), Some(2));
-    // assert!(!bst.delete(2));
-    // assert!(bst.delete(10));
-    // assert_eq!(bst.len(), 4);
-    // assert!(bst.delete(9));
-    // assert!(bst.delete(8));
-    // // assert!(bst.delete(1));
-    // assert!(bst.delete(5));
-    // // assert!(bst.root.is_none());
-    // // assert_eq!(bst.len(), 0);
-    // println!("{:?}", bst.root.as_deref().unwrap());
+    // let mut hash = std::collections::HashMap::<i32, i32>::new();
+    // let wow = hash.get(&2).unwrap();
+    // let cool = hash.remove(&2).unwrap();
+    // let b = wow == &cool;
+
+    // let a = avl.get(&2).unwrap();
+    // let b = avl.remove(&2).unwrap();
+    // let cool = a.value == b;
+    println!("{:#?}", avl.root.as_ref());
+
+    assert_eq!(avl.remove(&5), Some(5));
+    assert_eq!(avl.root.as_ref().unwrap().value, 8);
+
+    println!("{:#?}", avl.root.as_ref());
+
+    assert!(false);
+    // assert_eq!(avl.remove(&8), Some(8));
+    // assert_eq!(avl.root.as_ref().unwrap().value, 10);
+
+    // assert_eq!(avl.remove(&15), Some(15));
+
+    // assert_eq!(avl.remove(&10), Some(10));
+    // assert_eq!(avl.root.as_ref().unwrap().value, 3);
   }
 
   #[test]
