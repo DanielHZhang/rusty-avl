@@ -215,14 +215,14 @@ impl<K: Ord + Debug, V: PartialEq> Extract for Branch<K, V> {
 #[cfg(test)]
 mod test {
   use super::Node;
-  use crate::iter::{IterPostorder, IterPreorder};
 
   #[test]
   fn rotate_left() {
-    // Right-right case
-    // 1              2
-    //   2    ->   1    3
-    //     3
+    /* Right-right case
+       1               2
+         2     ->    1   3
+           3
+    */
     let mut root = Box::new(Node {
       key: 1,
       value: 1,
@@ -250,11 +250,43 @@ mod test {
   }
 
   #[test]
+  fn rotate_right() {
+    /* Left-left case
+           3           2
+         2     ->    1   3
+       1
+    */
+    let mut root = Box::new(Node {
+      key: 3,
+      value: 3,
+      height: 3,
+      left: Some(Box::new(Node {
+        key: 2,
+        value: 2,
+        height: 2,
+        left: Some(Box::new(Node::new(1, 1))),
+        right: None,
+      })),
+      right: None,
+    });
+
+    assert!(root.rotate_right());
+    assert_eq!(root.key, 2, "rotated root key");
+
+    let left = root.left.as_mut().unwrap();
+    let right = root.right.as_mut().unwrap();
+
+    assert_eq!(left.key, 1, "left child key");
+    assert_eq!(right.key, 3, "right child key");
+  }
+
+  #[test]
   fn rebalance_right_left() {
-    // First rotate right to get the right-right case, then rotate left
-    // 1           1                  2
-    //   3    ->     2      ->     1    3
-    // 2               3
+    /* First rotate right to get the right-right case, then rotate left
+       1           1                  2
+         3    ->     2      ->     1    3
+       2               3
+    */
     let mut root = Box::new(Node {
       key: 1,
       value: 1,
@@ -283,21 +315,36 @@ mod test {
   }
 
   #[test]
-  fn rotate_right() {
-    // let mut root = Node::branch(
-    //   2,
-    //   2,
-    //   Node::new(1, 1),
-    //   Node::branch(4, 4, Node::new(3, 3), Node::new(5, 5)),
-    // );
-    // assert!(root.rotate_left());
-    // let expected_preorder = Vec::from([4, 2, 1, 3, 5]);
-    // for (index, node) in IterPreorder::new(Some(&root)).enumerate() {
-    //   assert_eq!(node.key, expected_preorder[index]);
-    // }
-    // let expected_postorder = Vec::from([1, 3, 2, 5, 4]);
-    // for (index, node) in IterPostorder::new(Some(&root)).enumerate() {
-    //   assert_eq!(node.key, expected_postorder[index]);
-    // }
+  fn rebalance_left_right() {
+    /* First rotate right to get the right-right case, then rotate left
+         3              3             2
+       1      ->      2      ->     1   3
+         2          1
+    */
+    let mut root = Box::new(Node {
+      key: 3,
+      value: 3,
+      height: 3,
+      left: Some(Box::new(Node {
+        key: 1,
+        value: 1,
+        height: 2,
+        left: None,
+        right: Some(Box::new(Node::new(2, 2))),
+      })),
+      right: None,
+    });
+
+    assert!(root.rebalance());
+    assert_eq!(root.key, 2);
+    assert_eq!(root.height, 2);
+
+    let left = root.left.as_ref().unwrap();
+    assert_eq!(left.key, 1);
+    assert_eq!(left.height, 1);
+
+    let right = root.right.as_ref().unwrap();
+    assert_eq!(right.key, 3);
+    assert_eq!(right.height, 1);
   }
 }

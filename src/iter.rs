@@ -157,7 +157,7 @@ mod test {
   use crate::AvlTree;
 
   fn avl_iter_setup() -> AvlTree<i32, i32> {
-    /*
+    /* Tree after insertion rebalancing:
              6
         2         8
       1   4     7   9
