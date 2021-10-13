@@ -157,6 +157,12 @@ mod test {
   use crate::AvlTree;
 
   fn avl_iter_setup() -> AvlTree<i32, i32> {
+    /*
+             6
+        2         8
+      1   4     7   9
+         3 5         10
+    */
     let mut avl = AvlTree::default();
     for key in [6, 3, 8, 1, 2, 9, 5, 4, 7, 10] {
       avl.insert(key, key);
@@ -167,7 +173,7 @@ mod test {
   #[test]
   fn iter_preorder() {
     let bst = avl_iter_setup();
-    let expected = Vec::from([6, 3, 1, 2, 5, 4, 8, 7, 9, 10]);
+    let expected = Vec::from([6, 2, 1, 4, 3, 5, 8, 7, 9, 10]);
     for (index, node) in bst.iter_preorder().enumerate() {
       assert_eq!(node.key, expected[index]);
     }
@@ -176,7 +182,7 @@ mod test {
   #[test]
   fn iter_inorder() {
     let bst = avl_iter_setup();
-    let expected: Vec<i32> = (1..=10).collect();
+    let expected = (1..=10).collect::<Vec<i32>>();
     for (index, node) in bst.iter_inorder().enumerate() {
       assert_eq!(node.key, expected[index]);
     }
@@ -185,7 +191,7 @@ mod test {
   #[test]
   fn iter_postorder() {
     let bst = avl_iter_setup();
-    let expected = Vec::from([2, 1, 4, 5, 3, 7, 10, 9, 8, 6]);
+    let expected = Vec::from([1, 3, 5, 4, 2, 7, 10, 9, 8, 6]);
     for (index, node) in bst.iter_postorder().enumerate() {
       assert_eq!(node.key, expected[index]);
     }
