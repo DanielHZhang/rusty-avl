@@ -190,35 +190,27 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
     Some(node.value)
   }
 
-  pub fn smallest(&self) -> Option<&Node<K, V>> {
-    self
-      .root
-      .as_ref()
-      .map(|root| root.smallest())
-      .unwrap_or(None)
+  pub fn min(&self) -> Option<&Node<K, V>> {
+    self.root.as_ref().map(|root| root.min()).unwrap_or(None)
   }
 
-  pub fn smallest_mut(&mut self) -> Option<&mut Node<K, V>> {
+  pub fn min_mut(&mut self) -> Option<&mut Node<K, V>> {
     self
       .root
       .as_mut()
-      .map(|root| root.smallest_mut())
+      .map(|root| root.min_mut())
       .unwrap_or(None)
   }
 
-  pub fn largest(&self) -> Option<&Node<K, V>> {
-    self
-      .root
-      .as_ref()
-      .map(|root| root.largest())
-      .unwrap_or(None)
+  pub fn max(&self) -> Option<&Node<K, V>> {
+    self.root.as_ref().map(|root| root.max()).unwrap_or(None)
   }
 
-  pub fn largest_mut(&mut self) -> Option<&mut Node<K, V>> {
+  pub fn max_mut(&mut self) -> Option<&mut Node<K, V>> {
     self
       .root
       .as_mut()
-      .map(|root| root.largest_mut())
+      .map(|root| root.max_mut())
       .unwrap_or(None)
   }
 
@@ -239,7 +231,7 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
               None => break,
             },
             Ordering::Equal => match node.right.as_deref() {
-              Some(right) => return right.smallest().or(Some(right)),
+              Some(right) => return right.min().or(Some(right)),
               None => {
                 // Trace backwards through visited parents, until encountering successor
                 return visited.into_iter().rev().find(|parent| &parent.key > key);
@@ -269,7 +261,7 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
               None => break,
             },
             Ordering::Equal => match node.left.as_deref() {
-              Some(left) => return left.largest().or(Some(left)),
+              Some(left) => return left.max().or(Some(left)),
               None => {
                 // Trace backwards through visited parents, until encounting predecessor
                 return visited.into_iter().rev().find(|parent| &parent.key < key);
@@ -448,10 +440,10 @@ mod test {
     avl.insert(2, "two");
     avl.insert(1, "one");
 
-    let smallest_mut = avl.smallest_mut();
+    let smallest_mut = avl.min_mut();
     assert_eq!(smallest_mut.unwrap().key, 1);
 
-    let smallest = avl.smallest();
+    let smallest = avl.min();
     assert_eq!(smallest.unwrap().key, 1);
   }
 
@@ -462,10 +454,10 @@ mod test {
     avl.insert(10, "ten");
     avl.insert(16, "sixteen");
 
-    let largest_mut = avl.largest_mut();
+    let largest_mut = avl.max_mut();
     assert_eq!(largest_mut.unwrap().key, 16);
 
-    let largest = avl.largest();
+    let largest = avl.max();
     assert_eq!(largest.unwrap().key, 16);
   }
 

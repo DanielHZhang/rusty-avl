@@ -1,6 +1,6 @@
 use std::{cmp::max, fmt::Debug, mem, usize};
 
-pub type Branch<K, V> = Option<Box<Node<K, V>>>;
+pub(crate) type Branch<K, V> = Option<Box<Node<K, V>>>;
 
 enum BalanceFactor {
   Balanced,
@@ -10,15 +10,16 @@ enum BalanceFactor {
 
 #[derive(Debug)]
 pub struct Node<K: Ord, V: PartialEq> {
-  pub(crate) height: usize,
   pub key: K,
   pub value: V,
   pub left: Branch<K, V>,
   pub right: Branch<K, V>,
+  pub(crate) height: usize,
 }
 
 impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
-  pub fn new(key: K, value: V) -> Self {
+  /// Creates an empty leaf Node with an initial height of 1.
+  pub(crate) fn new(key: K, value: V) -> Self {
     Self {
       key,
       value,
@@ -28,11 +29,13 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     }
   }
 
+  /// Returns true if the Node has no children.
   pub fn is_leaf(&self) -> bool {
     self.left.is_none() && self.right.is_none()
   }
 
-  pub(crate) fn smallest(&self) -> Option<&Self> {
+  /// Returns a reference to the minimum child Node from the current Node.
+  pub(crate) fn min(&self) -> Option<&Self> {
     if self.is_leaf() {
       return None;
     }
@@ -43,7 +46,8 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     Some(cur)
   }
 
-  pub(crate) fn smallest_mut(&mut self) -> Option<&mut Self> {
+  /// Returns a mutable reference to the minimum child Node from the current Node.
+  pub(crate) fn min_mut(&mut self) -> Option<&mut Self> {
     if self.is_leaf() {
       return None;
     }
@@ -54,7 +58,8 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     Some(cur)
   }
 
-  pub(crate) fn largest(&self) -> Option<&Self> {
+  /// Returns a reference to the maximum child Node from the current Node.
+  pub(crate) fn max(&self) -> Option<&Self> {
     if self.is_leaf() {
       return None;
     }
@@ -65,7 +70,8 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     Some(cur)
   }
 
-  pub(crate) fn largest_mut(&mut self) -> Option<&mut Self> {
+  /// Returns a mutable reference to the maximum child Node from the current Node.
+  pub(crate) fn max_mut(&mut self) -> Option<&mut Self> {
     if self.is_leaf() {
       return None;
     }
@@ -76,6 +82,9 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     Some(cur)
   }
 
+  /// Returns true if the current Node was rebalanced, false if the Node is already balanced.
+  /// Rebalances the Node by performing a left rotation if the Node is right heavy, or a right
+  /// rotation if the Node is left heavy.
   pub(crate) fn rebalance(&mut self) -> bool {
     // self.update_height();
     match self.balance_factor() {
@@ -91,7 +100,6 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
       },
       BalanceFactor::LeftHeavy(2) => match self.left.as_deref_mut() {
         Some(left_child) => {
-          println!("SHOULD BE LEFT HEAVY: {:?}", left_child.key);
           // Check if left child of root is right heavy
           if let BalanceFactor::RightHeavy(1) = left_child.balance_factor() {
             left_child.rotate_left();
@@ -104,7 +112,8 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     }
   }
 
-  /// Assuming you are at the parent node to be demoted
+  /// Returns true if the Node was rotated left. A left rotation demotes the root Node (that called
+  /// rotate) into the left child and promotes its right child into the new root.
   fn rotate_left(&mut self) -> bool {
     if self.right.is_none() {
       return false;
@@ -128,7 +137,8 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     true
   }
 
-  /// Assuming you are at the parent node to be demoted
+  /// Returns true fi the Node was rotated right. A right rotation demotes the root Node (that
+  /// called rotate) into the right child and promotes its left child into the new root.
   fn rotate_right(&mut self) -> bool {
     if self.left.is_none() {
       return false;
@@ -153,18 +163,22 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     true
   }
 
+  /// Returns the height of the left subtree or 0 if the Node has no left child.
   fn left_height(&self) -> usize {
     self.left.as_ref().map_or(0, |left| left.height)
   }
 
+  /// Returns the height of the right subtree or 0 if the Node has no right child.
   fn right_height(&self) -> usize {
     self.right.as_ref().map_or(0, |right| right.height)
   }
 
+  /// Updates the height of the Node given the updated heights of its left and right subtrees.
   pub fn update_height(&mut self) {
     self.height = 1 + max(self.left_height(), self.right_height());
   }
 
+	///
   fn balance_factor(&mut self) -> BalanceFactor {
     let left_height = self.left_height();
     let right_height = self.right_height();
