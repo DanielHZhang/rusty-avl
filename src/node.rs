@@ -1,11 +1,15 @@
-use std::{cmp::max, fmt::Debug, mem, usize};
+use std::{
+  cmp::{max, Ordering},
+  fmt::Debug,
+  mem, usize,
+};
 
 pub(crate) type Branch<K, V> = Option<Box<Node<K, V>>>;
 
 enum BalanceFactor {
   Balanced,
-  LeftHeavy(i8),
-  RightHeavy(i8),
+  LeftHeavy(u8),
+  RightHeavy(u8),
 }
 
 #[derive(Debug)]
@@ -86,9 +90,8 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
   /// Rebalances the Node by performing a left rotation if the Node is right heavy, or a right
   /// rotation if the Node is left heavy.
   pub(crate) fn rebalance(&mut self) -> bool {
-    // self.update_height();
     match self.balance_factor() {
-      BalanceFactor::RightHeavy(2) => match self.right.as_deref_mut() {
+      BalanceFactor::RightHeavy(2) => match self.right.as_mut() {
         Some(right_child) => {
           // Check if right child of root is left heavy
           if let BalanceFactor::LeftHeavy(1) = right_child.balance_factor() {
@@ -98,7 +101,7 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
         }
         None => false,
       },
-      BalanceFactor::LeftHeavy(2) => match self.left.as_deref_mut() {
+      BalanceFactor::LeftHeavy(2) => match self.left.as_mut() {
         Some(left_child) => {
           // Check if left child of root is right heavy
           if let BalanceFactor::RightHeavy(1) = left_child.balance_factor() {
@@ -178,21 +181,21 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     self.height = 1 + max(self.left_height(), self.right_height());
   }
 
-	///
+  /// Calculates the balance factor of the Node given the heights of its left and right subtrees.
   fn balance_factor(&mut self) -> BalanceFactor {
     let left_height = self.left_height();
     let right_height = self.right_height();
-    // TODO: convert to match on ordering and change back to u8
-    if left_height > right_height {
-      BalanceFactor::LeftHeavy((left_height - right_height) as i8)
-    } else if left_height < right_height {
-      BalanceFactor::RightHeavy((right_height - left_height) as i8)
-    } else {
-      BalanceFactor::Balanced
+
+    // Ensure that difference is always positive for u8
+    match left_height.cmp(&right_height) {
+      Ordering::Less => BalanceFactor::RightHeavy((right_height - left_height) as u8),
+      Ordering::Greater => BalanceFactor::LeftHeavy((left_height - right_height) as u8),
+      Ordering::Equal => BalanceFactor::Balanced,
     }
   }
 }
 
+/// A trait for removing and returning the minimum Node within a subtree.
 pub trait Extract {
   fn extract_min(&mut self) -> Self;
 }
@@ -206,21 +209,8 @@ impl<K: Ord + Debug, V: PartialEq> Extract for Branch<K, V> {
     while min.as_ref().unwrap().left.is_some() {
       min = &mut min.as_mut().unwrap().left;
     }
-    // Remove extracted min, replacing it with the right child or left child passed from parent
-    let mut right_child = min.as_mut().unwrap().right.take();
-    if let Some(ref mut child) = right_child {
-      child.rebalance();
-    }
-
-    // let new_child = match min.as_mut().unwrap().right.take() {
-    //   Some(mut node) => {
-    //     assert!(node.left.is_none()); // cur should equal left child if it existed
-    //     node.left = child; // Set the left child passed down from the parent
-    //     node.rebalance();
-    //     Some(node)
-    //   }
-    //   None => child,
-    // };
+    // Replace the found min node with it's right child
+    let right_child = min.as_mut().unwrap().right.take();
     let extracted = std::mem::replace(min, right_child);
     extracted
   }
