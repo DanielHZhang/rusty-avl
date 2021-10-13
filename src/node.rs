@@ -116,6 +116,15 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     mem::swap(self, new_root.as_deref_mut().unwrap());
     self.left = new_root; // New root now contains old self
     self.right = right_right;
+
+    // Update heights of all involved nodes
+    if let Some(node) = &mut self.left {
+      node.update_height();
+    }
+    if let Some(node) = &mut self.right {
+      node.update_height();
+    }
+    self.update_height();
     true
   }
 
@@ -130,11 +139,17 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
     let mut new_root = mem::replace(&mut self.left, left_right);
     let new_root_node = new_root.as_deref_mut().unwrap();
     mem::swap(self, new_root_node);
-    // mem::swap(&mut self.value, &mut new_root_node.value);
-    // mem::swap(&mut self.key, &mut new_root_node.key);
-    // mem::swap(&mut self.count, &mut new_root_node.count);
     self.left = left_left;
     self.right = new_root; // New root now contains old self
+
+    // Update heights of all involved nodes
+    if let Some(node) = &mut self.left {
+      node.update_height();
+    }
+    if let Some(node) = &mut self.right {
+      node.update_height();
+    }
+    self.update_height();
     true
   }
 
@@ -153,6 +168,7 @@ impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
   fn balance_factor(&mut self) -> BalanceFactor {
     let left_height = self.left_height();
     let right_height = self.right_height();
+    // TODO: convert to match on ordering and change back to u8
     if left_height > right_height {
       BalanceFactor::LeftHeavy((left_height - right_height) as i8)
     } else if left_height < right_height {
@@ -203,12 +219,26 @@ mod test {
 
   #[test]
   fn rotate_left() {
-    let mut root = Node::new(1, 1);
-    root.right = Some(Box::new(Node::new(2, 2)));
-    root.right.as_mut().unwrap().right = Some(Box::new(Node::new(3, 3)));
+    // Right-right case
+    // 1              2
+    //   2    ->   1    3
+    //     3
+    let mut root = Box::new(Node {
+      key: 1,
+      value: 1,
+      height: 3,
+      left: None,
+      right: Some(Box::new(Node {
+        key: 2,
+        value: 2,
+        height: 2,
+        left: None,
+        right: Some(Box::new(Node::new(3, 3))),
+      })),
+    });
 
     assert!(root.rotate_left());
-    assert_eq!(root.key, 2);
+    assert_eq!(root.key, 2, "rotated root key");
 
     let left = root.left.as_mut().unwrap();
     let right = root.right.as_mut().unwrap();
@@ -217,6 +247,39 @@ mod test {
     assert_eq!(right.key, 3, "right child key");
     // assert_eq!(left.height, 1, "left child height");
     // assert_eq!(right.height, 1, "right child height");
+  }
+
+  #[test]
+  fn rebalance_right_left() {
+    // First rotate right to get the right-right case, then rotate left
+    // 1           1                  2
+    //   3    ->     2      ->     1    3
+    // 2               3
+    let mut root = Box::new(Node {
+      key: 1,
+      value: 1,
+      height: 3,
+      left: None,
+      right: Some(Box::new(Node {
+        key: 3,
+        value: 3,
+        height: 2,
+        left: Some(Box::new(Node::new(2, 2))),
+        right: None,
+      })),
+    });
+
+    assert!(root.rebalance());
+    assert_eq!(root.key, 2);
+    assert_eq!(root.height, 2);
+
+    let left = root.left.as_ref().unwrap();
+    assert_eq!(left.key, 1);
+    assert_eq!(left.height, 1);
+
+    let right = root.right.as_ref().unwrap();
+    assert_eq!(right.key, 3);
+    assert_eq!(right.height, 1);
   }
 
   #[test]

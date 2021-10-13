@@ -151,3 +151,43 @@ impl<'a, K: std::fmt::Debug + Ord, V: PartialEq> Iterator for IterPostorder<'a, 
       .unwrap_or(None)
   }
 }
+
+#[cfg(test)]
+mod test {
+  use crate::AvlTree;
+
+  fn avl_iter_setup() -> AvlTree<i32, i32> {
+    let mut avl = AvlTree::default();
+    for key in [6, 3, 8, 1, 2, 9, 5, 4, 7, 10] {
+      avl.insert(key, key);
+    }
+    avl
+  }
+
+  #[test]
+  fn iter_preorder() {
+    let bst = avl_iter_setup();
+    let expected = Vec::from([6, 3, 1, 2, 5, 4, 8, 7, 9, 10]);
+    for (index, node) in bst.iter_preorder().enumerate() {
+      assert_eq!(node.key, expected[index]);
+    }
+  }
+
+  #[test]
+  fn iter_inorder() {
+    let bst = avl_iter_setup();
+    let expected: Vec<i32> = (1..=10).collect();
+    for (index, node) in bst.iter_inorder().enumerate() {
+      assert_eq!(node.key, expected[index]);
+    }
+  }
+
+  #[test]
+  fn iter_postorder() {
+    let bst = avl_iter_setup();
+    let expected = Vec::from([2, 1, 4, 5, 3, 7, 10, 9, 8, 6]);
+    for (index, node) in bst.iter_postorder().enumerate() {
+      assert_eq!(node.key, expected[index]);
+    }
+  }
+}
