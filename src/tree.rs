@@ -1,8 +1,9 @@
+use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
+
 use super::{
   iter::{IterInorder, IterPostorder, IterPreorder},
   node::{Branch, Extract, Node},
 };
-use std::{borrow::Borrow, cmp::Ordering, collections::VecDeque, fmt::Debug};
 
 #[derive(Debug)]
 pub struct AvlTree<K: Ord, V: PartialEq> {
@@ -378,52 +379,66 @@ mod test {
       assert!(result.is_none());
     }
 
-    assert_eq!(avl.len(), 5, "length should be updated");
+    assert_eq!(avl.len(), 5, "length is updated");
 
     let root = avl.root.as_ref().unwrap();
-    assert_eq!(root.key, 2, "rebalancing of root node should occur");
+    assert_eq!(root.key, 2, "rebalancing of root node");
+
     let right = root.right.as_ref().unwrap();
-    assert_eq!(right.key, 4, "rebalancing of right node should occur");
+    assert_eq!(right.key, 4, "rebalancing of right node");
 
-    println!("what: {:#?}", root);
+    assert_eq!(root.height, 3, "height is correct after rebalancing");
 
-    assert_eq!(root.height, 3, "height should be correct after rebalancing");
-
-    // Inserting existing keys should return previous value
-    assert_eq!(avl.insert(2, 12), Some(2));
-    assert_eq!(avl.insert(4, 14), Some(4));
+    assert_eq!(
+      avl.insert(2, 12),
+      Some(2),
+      "inserting existing key returns previous value"
+    );
   }
 
   #[test]
   fn remove() {
+    /* Tree after insertion rebalancing:
+              5
+         2          12
+       1	 3    8       15
+                 10
+    */
     let mut avl = AvlTree::default();
     for key in [5, 2, 12, 1, 3, 8, 15, 10] {
       avl.insert(key, key);
     }
 
-    assert!(avl.remove(&20).is_none()); // non-existent key
+    assert!(avl.remove(&20).is_none(), "non-existent key");
 
-    // println!("{:#?}", avl.root.as_ref());
+    assert_eq!(avl.remove(&5), Some(5), "remove root key 5");
+    assert_eq!(avl.root.as_ref().unwrap().key, 8, "new root is correct");
 
-    assert_eq!(avl.remove(&5), Some(5)); // remove root value
-    assert_eq!(avl.root.as_ref().unwrap().value, 8);
+    assert_eq!(avl.remove(&8), Some(8), "remove root key 8");
+    assert_eq!(avl.root.as_ref().unwrap().key, 10, "new root is correct");
 
-    // println!("{:#?}", avl.root.as_ref());
-    // assert!(false);
+    assert_eq!(avl.remove(&15), Some(15), "remove leaf with no children");
 
-    assert_eq!(avl.remove(&8), Some(8)); // remove root value
-    assert_eq!(avl.root.as_ref().unwrap().value, 10);
+    assert_eq!(
+      avl.remove(&10),
+      Some(10),
+      "remove root key 10, causing rebalance"
+    );
+    assert_eq!(avl.root.as_ref().unwrap().key, 2, "new root is correct");
 
-    assert_eq!(avl.remove(&15), Some(15)); // remove leaf with no children
-
-    assert_eq!(avl.remove(&10), Some(10)); // remove root, causing rebalance
-                                           // println!("{:#?}", avl.root.as_ref());
+    assert_eq!(
+      avl.remove(&1),
+      Some(1),
+      "remove root key 1, causing rebalance"
+    );
+    assert_eq!(avl.root.as_ref().unwrap().key, 3, "new root is correct");
 
     assert_eq!(avl.remove(&3), Some(3));
+    assert_eq!(avl.remove(&12), Some(12));
+    assert_eq!(avl.remove(&2), Some(2));
 
-    // println!("{:#?}", avl.root.as_ref());
-    assert!(false);
-    // assert_eq!(avl.root.as_ref().unwrap().value, 3);
+    assert!(avl.root.is_none());
+    assert_eq!(avl.len(), 0);
   }
 
   #[test]

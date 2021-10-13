@@ -245,8 +245,6 @@ mod test {
 
     assert_eq!(left.key, 1, "left child key");
     assert_eq!(right.key, 3, "right child key");
-    // assert_eq!(left.height, 1, "left child height");
-    // assert_eq!(right.height, 1, "right child height");
   }
 
   #[test]
