@@ -119,7 +119,7 @@ impl<'a, K: Ord, V: PartialEq> IterPostorder<'a, K, V> {
   }
 }
 
-impl<'a, K: Ord, V: PartialEq> Iterator for IterPostorder<'a, K, V> {
+impl<'a, K: std::fmt::Debug + Ord, V: PartialEq> Iterator for IterPostorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {

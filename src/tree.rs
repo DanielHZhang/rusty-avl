@@ -21,7 +21,7 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
 
 // TODO: implement FromIterator for AvlTree
 
-impl<K: Ord, V: PartialEq> AvlTree<K, V> {
+impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   /// Constructs a new AVL tree with an empty root.
   pub fn new(root: Node<K, V>) -> Self {
     Self {
@@ -128,6 +128,7 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
     // Trace backwards through visited parents, updating their heights
     for parent in visited.into_iter().rev() {
       let node = unsafe { &mut *parent };
+      // println!("GOES HERE: {:?} WHAT IS HEIGHT: {}", node.key, node.height);
       node.update_height();
       node.rebalance();
     }
@@ -167,15 +168,14 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       (Some(_), None) => *target = node.left.take(),
       (None, Some(_)) => *target = node.right.take(),
       (Some(_), Some(_)) => {
-        println!("SHOULD GO HERE");
-        // let left = node.left.take();
-        let mut extracted = node.right.extract_min(None);
-
+        let mut extracted = node.right.extract_min();
         if let Some(ref mut root) = extracted {
+          println!("GOIND TO REBALANCE");
           root.left = node.left;
           root.right = node.right;
+          root.rebalance();
+          println!("ROOT: {:?}, height: {}", root.key, root.height);
         }
-
         *target = extracted;
       }
     };
@@ -373,17 +373,25 @@ mod test {
     let mut avl = AvlTree::default();
 
     // Inserting unique keys should return None
-    assert!(avl.insert(1, 2).is_none());
-    assert!(avl.insert(2, 4).is_none());
-    assert!(avl.insert(3, 6).is_none());
-    assert!(avl.insert(4, 8).is_none());
+    for key in [1, 2, 3, 4, 5] {
+      let result = avl.insert(key, key);
+      assert!(result.is_none());
+    }
 
-    // Length should be updated
-    assert_eq!(avl.len(), 4);
+    assert_eq!(avl.len(), 5, "length should be updated");
+
+    let root = avl.root.as_ref().unwrap();
+    assert_eq!(root.key, 2, "rebalancing of root node should occur");
+    let right = root.right.as_ref().unwrap();
+    assert_eq!(right.key, 4, "rebalancing of right node should occur");
+
+    println!("what: {:#?}", root);
+
+    assert_eq!(root.height, 3, "height should be correct after rebalancing");
 
     // Inserting existing keys should return previous value
-    assert_eq!(avl.insert(2, 9), Some(4));
-    assert_eq!(avl.insert(4, 5), Some(8));
+    assert_eq!(avl.insert(2, 12), Some(2));
+    assert_eq!(avl.insert(4, 14), Some(4));
   }
 
   #[test]
@@ -393,28 +401,28 @@ mod test {
       avl.insert(key, key);
     }
 
-    // let mut hash = std::collections::HashMap::<i32, i32>::new();
-    // let wow = hash.get(&2).unwrap();
-    // let cool = hash.remove(&2).unwrap();
-    // let b = wow == &cool;
+    assert!(avl.remove(&20).is_none()); // non-existent key
 
-    // let a = avl.get(&2).unwrap();
-    // let b = avl.remove(&2).unwrap();
-    // let cool = a.value == b;
-    println!("{:#?}", avl.root.as_ref());
+    // println!("{:#?}", avl.root.as_ref());
 
-    assert_eq!(avl.remove(&5), Some(5));
+    assert_eq!(avl.remove(&5), Some(5)); // remove root value
     assert_eq!(avl.root.as_ref().unwrap().value, 8);
 
-    println!("{:#?}", avl.root.as_ref());
+    // println!("{:#?}", avl.root.as_ref());
+    // assert!(false);
 
+    assert_eq!(avl.remove(&8), Some(8)); // remove root value
+    assert_eq!(avl.root.as_ref().unwrap().value, 10);
+
+    assert_eq!(avl.remove(&15), Some(15)); // remove leaf with no children
+
+    assert_eq!(avl.remove(&10), Some(10)); // remove root, causing rebalance
+                                           // println!("{:#?}", avl.root.as_ref());
+
+    assert_eq!(avl.remove(&3), Some(3));
+
+    // println!("{:#?}", avl.root.as_ref());
     assert!(false);
-    // assert_eq!(avl.remove(&8), Some(8));
-    // assert_eq!(avl.root.as_ref().unwrap().value, 10);
-
-    // assert_eq!(avl.remove(&15), Some(15));
-
-    // assert_eq!(avl.remove(&10), Some(10));
     // assert_eq!(avl.root.as_ref().unwrap().value, 3);
   }
 
