@@ -1,6 +1,7 @@
 use super::Node;
 
-pub struct IterPreorder<'a, K: Ord, V: PartialEq> {
+/// A binary tree iterator that performs a pre-order traversal of nodes.
+pub struct IterPreorder<'a, K, V> {
   stack: Vec<&'a Node<K, V>>,
 }
 
@@ -41,7 +42,8 @@ impl<'a, K: Ord, V: PartialEq> Iterator for IterPreorder<'a, K, V> {
   }
 }
 
-pub struct IterInorder<'a, K: Ord, V: PartialEq> {
+/// A binary search tree iterator that performs an in-order traversal of nodes.
+pub struct IterInorder<'a, K, V> {
   stack: Vec<&'a Node<K, V>>,
   current: Option<&'a Node<K, V>>,
 }
@@ -93,7 +95,8 @@ impl<'a, K: Ord, V: PartialEq> Iterator for IterInorder<'a, K, V> {
   }
 }
 
-pub struct IterPostorder<'a, K: Ord, V: PartialEq> {
+/// A binary tree iterator that performs a post-order traversal of nodes.
+pub struct IterPostorder<'a, K, V> {
   stack: Vec<&'a Node<K, V>>,
   current: Option<&'a Node<K, V>>,
 }
@@ -119,7 +122,7 @@ impl<'a, K: Ord, V: PartialEq> IterPostorder<'a, K, V> {
   }
 }
 
-impl<'a, K: std::fmt::Debug + Ord, V: PartialEq> Iterator for IterPostorder<'a, K, V> {
+impl<'a, K: Ord, V: PartialEq> Iterator for IterPostorder<'a, K, V> {
   type Item = &'a Node<K, V>;
 
   fn next(&mut self) -> Option<Self::Item> {

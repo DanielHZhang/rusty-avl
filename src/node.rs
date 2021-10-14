@@ -1,19 +1,22 @@
 use std::{
   cmp::{max, Ordering},
-  fmt::Debug,
   mem, usize,
 };
 
 pub(crate) type Branch<K, V> = Option<Box<Node<K, V>>>;
 
+/// A representation of the different balance factor states. When heavy, it internally stores the
+/// difference between the left and right subtrees.
 enum BalanceFactor {
   Balanced,
   LeftHeavy(u8),
   RightHeavy(u8),
 }
 
+/// A single node within a tree. Stores a key-value pair of data, the current height of its
+/// subtree and pointers to its left and right children.
 #[derive(Debug)]
-pub struct Node<K: Ord, V: PartialEq> {
+pub struct Node<K, V> {
   pub key: K,
   pub value: V,
   pub left: Branch<K, V>,
@@ -21,7 +24,7 @@ pub struct Node<K: Ord, V: PartialEq> {
   pub(crate) height: usize,
 }
 
-impl<K: Ord + Debug, V: PartialEq> Node<K, V> {
+impl<K, V> Node<K, V> {
   /// Creates an empty leaf Node with an initial height of 1.
   pub(crate) fn new(key: K, value: V) -> Self {
     Self {
@@ -200,7 +203,7 @@ pub trait Extract {
   fn extract_min(&mut self) -> Self;
 }
 
-impl<K: Ord + Debug, V: PartialEq> Extract for Branch<K, V> {
+impl<K: Ord, V: PartialEq> Extract for Branch<K, V> {
   fn extract_min(&mut self) -> Self {
     let mut min = self;
     if min.is_none() {

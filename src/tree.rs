@@ -1,17 +1,19 @@
-use std::{cmp::Ordering, collections::VecDeque, fmt::Debug};
+use std::{cmp::Ordering, collections::VecDeque, iter::FromIterator};
 
 use super::{
   iter::{IterInorder, IterPostorder, IterPreorder},
   node::{Branch, Extract, Node},
 };
 
+/// An AVL tree implemented using purely iterative lookups. Stores a pointer to the root node and
+/// the current number of unique nodes within the tree.
 #[derive(Debug)]
-pub struct AvlTree<K: Ord, V: PartialEq> {
+pub struct AvlTree<K, V> {
   root: Branch<K, V>,
   size: usize,
 }
 
-impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
+impl<K, V> Default for AvlTree<K, V> {
   fn default() -> Self {
     Self {
       root: None,
@@ -20,10 +22,38 @@ impl<K: Ord, V: PartialEq> Default for AvlTree<K, V> {
   }
 }
 
-// TODO: implement FromIterator for AvlTree
+// impl<K: Ord, V: PartialEq> From<Vec<(K, V)>> for AvlTree<K, V> {
+//   fn from(v: Vec<(K, V)>) -> Self {
+//     let mut tree = Self::default();
+//     for (key, value) in v {
+//       tree.insert(key, value);
+//     }
+//     tree
+//   }
+// }
 
-impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
-  /// Constructs a new AVL tree with an empty root.
+impl<K: Ord, V: PartialEq> FromIterator<(K, V)> for AvlTree<K, V> {
+  fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+    let mut tree = Self::default();
+    for (key, value) in iter {
+      tree.insert(key, value);
+    }
+    tree
+  }
+}
+
+impl<K: Ord + PartialEq + Clone> FromIterator<K> for AvlTree<K, K> {
+  fn from_iter<T: IntoIterator<Item = K>>(iter: T) -> Self {
+    let mut tree = Self::default();
+    for key in iter {
+      tree.insert(key.clone(), key);
+    }
+    tree
+  }
+}
+
+impl<K: Ord, V: PartialEq> AvlTree<K, V> {
+  /// Creates a new AVL tree with an empty root.
   pub fn new(root: Node<K, V>) -> Self {
     Self {
       root: Some(Box::new(root)),
@@ -53,11 +83,7 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
   }
 
   /// Returns a reference to the node with the provided key.
-  pub fn get(&self, target: &K) -> Option<&Node<K, V>>
-// where
-  //   K: Borrow<Q>,
-  //   Q: PartialOrd + Eq + ?Sized,
-  {
+  pub fn get(&self, target: &K) -> Option<&Node<K, V>> {
     self
       .root
       .as_ref()
@@ -171,11 +197,10 @@ impl<K: Ord + Debug, V: PartialEq> AvlTree<K, V> {
       (Some(_), Some(_)) => {
         let mut extracted = node.right.extract_min();
         if let Some(ref mut root) = extracted {
-          println!("GOIND TO REBALANCE");
+          //TODO CHECK THIS LOGIC
           root.left = node.left;
           root.right = node.right;
           root.rebalance();
-          println!("ROOT: {:?}, height: {}", root.key, root.height);
         }
         *target = extracted;
       }
@@ -343,7 +368,7 @@ mod test {
     let mut avl = AvlTree::new(Node::new(2, 2));
     avl.insert(4, 4);
 
-    assert!(avl.get(&0).is_none()); // Non-existent keys should return None
+    assert!(avl.get(&0).is_none(), "non-existent key returns None");
 
     let found = avl.get(&2).unwrap();
     assert_eq!(found.key, 2);
@@ -364,11 +389,13 @@ mod test {
   #[test]
   fn insert() {
     let mut avl = AvlTree::default();
-
-    // Inserting unique keys should return None
     for key in [1, 2, 3, 4, 5] {
       let result = avl.insert(key, key);
-      assert!(result.is_none());
+      assert!(
+        result.is_none(),
+        "inserting unique key returned {:?}",
+        result
+      );
     }
 
     assert_eq!(avl.len(), 5, "length is updated");
@@ -396,10 +423,9 @@ mod test {
        1	 3    8       15
                  10
     */
-    let mut avl = AvlTree::default();
-    for key in [5, 2, 12, 1, 3, 8, 15, 10] {
-      avl.insert(key, key);
-    }
+    let mut avl = Vec::from([5, 2, 12, 1, 3, 8, 15, 10])
+      .into_iter()
+      .collect::<AvlTree<_, _>>();
 
     assert!(avl.remove(&20).is_none(), "non-existent key");
 
@@ -461,17 +487,11 @@ mod test {
     assert_eq!(largest.unwrap().key, 16);
   }
 
-  fn avl_cessor_setup<'a>() -> AvlTree<i32, i32> {
-    let mut avl = AvlTree::default();
-    for key in [5, 2, 1, 3, 4, 7, 6, 8] {
-      avl.insert(key, key);
-    }
-    avl
-  }
+  const TEST_NODES: [i32; 8] = [5, 2, 1, 3, 4, 7, 6, 8];
 
   #[test]
   fn successor() {
-    let mut avl = avl_cessor_setup();
+    let mut avl = Vec::from(TEST_NODES).into_iter().collect::<AvlTree<_, _>>();
     let mut key = 1;
     for expected in [2, 3, 4, 5, 6, 7, 8] {
       let suc = avl
@@ -485,7 +505,7 @@ mod test {
 
   #[test]
   fn predecessor() {
-    let mut avl = avl_cessor_setup();
+    let mut avl = Vec::from(TEST_NODES).into_iter().collect::<AvlTree<_, _>>();
     let mut key = 8;
     for expected in [7, 6, 5, 4, 3, 2, 1] {
       let pre = avl
