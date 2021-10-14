@@ -353,7 +353,7 @@ mod test {
 
   #[test]
   fn new() {
-    let avl: AvlTree<i32, i32> = AvlTree::default();
+    let avl = AvlTree::<i32, i32>::default();
     assert!(avl.root.is_none());
     assert!(avl.is_empty());
     assert_eq!(avl.len(), 0);

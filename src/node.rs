@@ -17,10 +17,10 @@ enum BalanceFactor {
 /// subtree and pointers to its left and right children.
 #[derive(Debug)]
 pub struct Node<K, V> {
-  pub key: K,
-  pub value: V,
-  pub left: Branch<K, V>,
-  pub right: Branch<K, V>,
+  pub(crate) key: K,
+  pub(crate) value: V,
+  pub(crate) left: Branch<K, V>,
+  pub(crate) right: Branch<K, V>,
   pub(crate) height: usize,
 }
 
@@ -34,6 +34,22 @@ impl<K, V> Node<K, V> {
       left: None,
       right: None,
     }
+  }
+
+  /// Returns a reference to the Node's key.
+  pub fn key(&self) -> &K {
+    &self.key
+  }
+
+  /// Returns a reference to the Node's value.
+  pub fn value(&self) -> &V {
+    &self.value
+  }
+
+  /// Returns a mutable reference to the Node's value.
+  pub fn set_value(&mut self, value: V) -> V {
+    let replaced = std::mem::replace(&mut self.value, value);
+    replaced
   }
 
   /// Returns true if the Node has no children.
