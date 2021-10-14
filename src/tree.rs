@@ -22,16 +22,6 @@ impl<K, V> Default for AvlTree<K, V> {
   }
 }
 
-// impl<K: Ord, V: PartialEq> From<Vec<(K, V)>> for AvlTree<K, V> {
-//   fn from(v: Vec<(K, V)>) -> Self {
-//     let mut tree = Self::default();
-//     for (key, value) in v {
-//       tree.insert(key, value);
-//     }
-//     tree
-//   }
-// }
-
 impl<K: Ord, V: PartialEq> FromIterator<(K, V)> for AvlTree<K, V> {
   fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
     let mut tree = Self::default();
@@ -108,6 +98,7 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       .unwrap_or(None)
   }
 
+  /// Returns a mutable reference to the node with the provided key.
   pub fn get_mut(&mut self, target: &K) -> Option<&mut Node<K, V>> {
     self
       .root
@@ -133,6 +124,8 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       .unwrap_or(None)
   }
 
+  /// Inserts a key-value pair into the tree. If the tree did not previously contain the given key,
+  /// None is returned, otherwise the old value associated with the key is returned.
   pub fn insert(&mut self, key: K, value: V) -> Option<V> {
     let mut visited: Vec<*mut Node<K, V>> = Vec::new(); // Store raw mut pointers
     let mut cur = &mut self.root;
@@ -155,13 +148,14 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
     // Trace backwards through visited parents, updating their heights
     for parent in visited.into_iter().rev() {
       let node = unsafe { &mut *parent };
-      // println!("GOES HERE: {:?} WHAT IS HEIGHT: {}", node.key, node.height);
       node.update_height();
       node.rebalance();
     }
     None
   }
 
+  /// Removes the Node with the given key from the tree, returning its value if a Node with the key
+  /// was previously in the tree.
   pub fn remove(&mut self, key: &K) -> Option<V> {
     let mut visited = Vec::<*mut Node<K, V>>::new(); // Store raw mut pointers
     let mut target = &mut self.root;
@@ -197,9 +191,9 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       (Some(_), Some(_)) => {
         let mut extracted = node.right.extract_min();
         if let Some(ref mut root) = extracted {
-          //TODO CHECK THIS LOGIC
           root.left = node.left;
           root.right = node.right;
+          root.update_height();
           root.rebalance();
         }
         *target = extracted;
@@ -211,14 +205,15 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       node.update_height();
       node.rebalance();
     }
-
     Some(node.value)
   }
 
+  /// Returns a reference to the minimum Node in the tree.
   pub fn min(&self) -> Option<&Node<K, V>> {
     self.root.as_ref().map(|root| root.min()).unwrap_or(None)
   }
 
+  /// Returns a reference to the minimum Node in the tree.
   pub fn min_mut(&mut self) -> Option<&mut Node<K, V>> {
     self
       .root
@@ -227,10 +222,12 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       .unwrap_or(None)
   }
 
+  /// Returns a reference to the maximum Node in the tree.
   pub fn max(&self) -> Option<&Node<K, V>> {
     self.root.as_ref().map(|root| root.max()).unwrap_or(None)
   }
 
+  /// Returns a mutable reference to maximum Node in the tree.
   pub fn max_mut(&mut self) -> Option<&mut Node<K, V>> {
     self
       .root
@@ -239,6 +236,8 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       .unwrap_or(None)
   }
 
+  /// Returns a reference to the successor Node of the given key. The successor is defined as the
+  /// Node with the minimum key value that is larger than the provided key.
   pub fn successor(&mut self, key: &K) -> Option<&Node<K, V>> {
     self
       .root
@@ -269,6 +268,8 @@ impl<K: Ord, V: PartialEq> AvlTree<K, V> {
       .unwrap_or(None)
   }
 
+  /// Returns a reference to the predecessor Node of the given key. The predecessor is defined as
+  /// the Node with the maximum key value that is smaller than the provided key.
   pub fn predecessor(&mut self, key: &K) -> Option<&Node<K, V>> {
     self
       .root
